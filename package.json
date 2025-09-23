@@ -10,6 +10,7 @@
         "generate": "npx prisma generate",
         "seed": "node prisma/seed.js",
         "build": "npm install && npx prisma generate",
+        "deploy": "node scripts/deploy.js",
         "migrate-posts": "node scripts/run-migration.js",
         "analyze-posts": "node scripts/analyze-wordpress-data.js",
         "setup-categories": "node scripts/setup-categories-tags.js",
