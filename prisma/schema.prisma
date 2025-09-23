@@ -1,0 +1,395 @@
+// prisma/schema.prisma
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        String   @id @default(cuid())
+    email     String   @unique
+    password  String
+    name      String
+    role      Role     @default(EDITOR)
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    articles      Article[]
+    inshorts      Inshort[]
+    notifications Notification[]
+    epapers       EPaper[]
+    highlights    Highlight[]
+
+    @@map("users")
+}
+
+enum Role {
+    ADMIN
+    EDITOR
+}
+
+model Category {
+    id          String   @id @default(cuid())
+    name        String   @unique
+    slug        String   @unique
+    description String?
+    color       String   @default("#FFA500")
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    articles Article[]
+    inshorts Inshort[]
+
+    @@map("categories")
+}
+
+model Article {
+    id              String        @id @default(cuid())
+    title           String
+    slug            String        @unique
+    excerpt         String?
+    content         String        @db.Text
+    featuredImage   String?
+    metaTitle       String?
+    metaDescription String?
+    ogImage         String?
+    status          ArticleStatus @default(DRAFT)
+    isBreaking      Boolean       @default(false)
+    isTopStory      Boolean       @default(false)
+    language        Language      @default(ENGLISH)
+    readTime        Int?
+    tags            String? // Comma-separated tags
+    quickRead       String? // Quick read summary (generated via Inshorts)
+    viewCount       Int           @default(0)
+    shareCount      Int           @default(0)
+    publishedAt     DateTime?
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+
+    authorId   String
+    author     User     @relation(fields: [authorId], references: [id])
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id])
+
+    inshorts   Inshort[]
+    QuickRead  QuickRead?
+    ArticleTag ArticleTag[]
+
+    @@map("articles")
+}
+
+model QuickRead {
+    id        String   @id @default(cuid())
+    headline  String
+    summary   String
+    sourceUrl String
+    createdAt DateTime @default(now())
+
+    articleId String  @unique
+    article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+    @@map("quick_reads")
+}
+
+model Tag {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    slug      String   @unique
+    createdAt DateTime @default(now())
+
+    articles ArticleTag[]
+
+    @@map("tags")
+}
+
+model ArticleTag {
+    articleId String
+    tagId     String
+
+    article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+    tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+    @@id([articleId, tagId])
+    @@map("article_tags")
+}
+
+model EPaper {
+    id            String       @id @default(cuid())
+    title         String
+    date          DateTime
+    language      Language
+    pdfUrl        String
+    pageCount     Int          @default(1)
+    fileSize      Int?
+    downloadCount Int          @default(0)
+    viewCount     Int          @default(0)
+    status        EPaperStatus @default(ACTIVE)
+    description   String?
+    uploadedBy    String?
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+
+    uploader User? @relation(fields: [uploadedBy], references: [id])
+
+    @@unique([date, language])
+    @@index([status])
+    @@index([date])
+    @@index([language])
+    @@map("epapers")
+}
+
+model Highlight {
+    id            String            @id @default(cuid())
+    title         String
+    caption       String?
+    imageUrl      String
+    thumbnailUrl  String?
+    category      String?
+    priority      HighlightPriority @default(NORMAL)
+    tags          String? // Comma-separated tags
+    location      String?
+    source        String?
+    altText       String?
+    aspectRatio   String? // e.g., "16:9", "4:3", "1:1"
+    fileSize      Int? // File size in bytes
+    imageWidth    Int?
+    imageHeight   Int?
+    format        String? // JPG, PNG, WebP
+    isPublic      Boolean           @default(true)
+    allowDownload Boolean           @default(true)
+    allowSharing  Boolean           @default(true)
+    addWatermark  Boolean           @default(true)
+    viewCount     Int               @default(0)
+    downloadCount Int               @default(0)
+    shareCount    Int               @default(0)
+    likeCount     Int               @default(0)
+    date          DateTime          @default(now())
+    createdAt     DateTime          @default(now())
+    updatedAt     DateTime          @updatedAt
+    uploadedBy    String?
+
+    uploader     User?                  @relation(fields: [uploadedBy], references: [id])
+    interactions HighlightInteraction[]
+    shares       HighlightShare[]
+
+    @@index([category])
+    @@index([priority])
+    @@index([date])
+    @@index([isPublic])
+    @@index([uploadedBy])
+    @@map("highlights")
+}
+
+model HighlightInteraction {
+    id              String          @id @default(cuid())
+    highlightId     String
+    interactionType InteractionType
+    platform        Platform?
+    userAgent       String?
+    ipAddress       String?
+    referrer        String?
+    location        String? // Derived from IP
+    deviceType      DeviceType?
+    downloadFormat  DownloadFormat?
+    downloadType    DownloadType?
+    createdAt       DateTime        @default(now())
+
+    highlight Highlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+
+    @@index([highlightId])
+    @@index([interactionType])
+    @@index([createdAt])
+    @@map("highlight_interactions")
+}
+
+model HighlightShare {
+    id          String        @id @default(cuid())
+    highlightId String
+    platform    SharePlatform
+    shareId     String? // Platform-specific share ID
+    successful  Boolean       @default(true)
+    metadata    Json? // Platform-specific data
+    createdAt   DateTime      @default(now())
+
+    highlight Highlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+
+    @@index([highlightId])
+    @@index([platform])
+    @@map("highlight_shares")
+}
+
+model NIT {
+    id        String   @id @default(cuid())
+    title     String
+    imageUrl  String
+    category  String?
+    date      DateTime @default(now())
+    createdAt DateTime @default(now())
+
+    @@map("nit")
+}
+
+enum ArticleStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum Language {
+    ENGLISH
+    HINDI
+}
+
+enum EPaperStatus {
+    ACTIVE
+    ARCHIVED
+}
+
+model Notification {
+    id             String             @id @default(cuid())
+    title          String
+    message        String             @db.Text
+    type           NotificationType   @default(GENERAL)
+    targetAudience String             @default("all")
+    scheduledAt    DateTime?
+    sentAt         DateTime?
+    status         NotificationStatus @default(DRAFT)
+    onesignalId    String?
+    articleId      String?
+    deliveredCount Int                @default(0)
+    clickedCount   Int                @default(0)
+    createdBy      String
+    createdAt      DateTime           @default(now())
+    updatedAt      DateTime           @updatedAt
+
+    creator User @relation(fields: [createdBy], references: [id])
+
+    @@map("notifications")
+}
+
+model UserSubscription {
+    id                String   @id @default(cuid())
+    onesignalPlayerId String   @unique
+    platform          Platform
+    isActive          Boolean  @default(true)
+    subscribedAt      DateTime @default(now())
+    lastActive        DateTime @default(now())
+
+    @@map("user_subscriptions")
+}
+
+enum NotificationType {
+    BREAKING
+    ARTICLE
+    GENERAL
+    DIGEST
+}
+
+enum NotificationStatus {
+    DRAFT
+    SCHEDULED
+    SENT
+    FAILED
+}
+
+enum Platform {
+    WEB
+    ANDROID
+    IOS
+}
+
+enum HighlightPriority {
+    LOW
+    NORMAL
+    HIGH
+    BREAKING
+}
+
+enum InteractionType {
+    VIEW
+    DOWNLOAD
+    SHARE
+    LIKE
+}
+
+enum DeviceType {
+    DESKTOP
+    MOBILE
+    TABLET
+}
+
+enum DownloadFormat {
+    ORIGINAL
+    LARGE
+    MEDIUM
+    SMALL
+}
+
+enum DownloadType {
+    JPG
+    PNG
+    WEBP
+}
+
+enum SharePlatform {
+    FACEBOOK
+    TWITTER
+    WHATSAPP
+    EMAIL
+    LINKEDIN
+    COPY_LINK
+}
+
+model Inshort {
+    id              String        @id @default(cuid())
+    title           String
+    slug            String        @unique
+    content         String        @db.Text
+    featuredImage   String?
+    metaTitle       String?
+    metaDescription String?
+    ogImage         String?
+    status          ArticleStatus @default(DRAFT)
+    language        Language      @default(ENGLISH)
+    readTime        Int?
+    viewCount       Int           @default(0)
+    shareCount      Int           @default(0)
+    publishedAt     DateTime?
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+
+    // Link to original article
+    sourceArticleId String
+    sourceArticle   Article @relation(fields: [sourceArticleId], references: [id])
+
+    // Author (same as source article)
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id])
+
+    // Category (same as source article)
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id])
+
+    tags       String? // Comma-separated tags
+    InshortTag InshortTag[]
+
+    @@map("inshorts")
+}
+
+model InshortTag {
+    id        String   @id @default(cuid())
+    name      String
+    slug      String
+    createdAt DateTime @default(now())
+
+    inshortId String
+    inshort   Inshort @relation(fields: [inshortId], references: [id])
+
+    @@unique([inshortId, name])
+    @@map("inshort_tags")
+}

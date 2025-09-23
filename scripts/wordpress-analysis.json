@@ -1,0 +1,13 @@
+{
+  "totalPosts": 10,
+  "publishedPosts": 10,
+  "draftPosts": 0,
+  "privatePosts": 0,
+  "uniqueCategories": 7,
+  "uniqueTags": 6,
+  "uniqueAuthors": 1,
+  "dateRange": {
+    "earliest": "2025-09-22T06:58:48.000Z",
+    "latest": "2025-09-22T17:42:00.000Z"
+  }
+}

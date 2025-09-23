@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Cliff News - CMS</title>
+
+    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN (for development only) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Suppress Tailwind CDN warning in development
+      if (typeof tailwind !== "undefined") {
+        tailwind.config = {
+          theme: {
+            extend: {},
+          },
+        };
+      }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/cms/assets/css/main.css" />
+
+    <!-- Self-hosted TinyMCE -->
+    <script src="/cms/assets/tinymce/js/tinymce/tinymce.min.js"></script>
+
+    <!-- OneSignal SDK -->
+    <script
+      src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
+      async=""
+    ></script>
+
+    <style>
+      .sidebar {
+        min-height: 100vh;
+      }
+      .content-area {
+        min-height: 100vh;
+      }
+      .content-section {
+        display: none;
+      }
+      .content-section.active {
+        display: block;
+      }
+      .nav-link.active {
+        background-color: #374151;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <!-- Login Modal -->
+    <div
+      id="login-modal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      style="display: none"
+    >
+      <div class="bg-white p-8 rounded-lg shadow-xl w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">
+          The Cliff News CMS
+        </h2>
+        <form id="login-form">
+          <div class="mb-4">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="email"
+              >Email</label
+            >
+            <input
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="mb-6">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="password"
+              >Password</label
+            >
+            <input
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            Login
+          </button>
+        </form>
+        <div
+          id="login-error"
+          class="mt-4 text-red-500 text-sm text-center"
+          style="display: none"
+        ></div>
+        <div class="mt-4 text-xs text-gray-600 text-center">
+          <p>Demo Credentials:</p>
+          <p>Admin: admin@thecliffnews.com / admin123</p>
+          <p>Editor: editor@thecliffnews.com / editor123</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="app" class="flex" style="display: none">
+      <!-- Sidebar -->
+      <div class="sidebar bg-gray-800 text-white w-64 p-6">
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-orange-400">The Cliff News</h1>
+          <p class="text-gray-400 text-sm">Content Management System</p>
+        </div>
+
+        <nav id="sidebar-nav">
+          <ul class="space-y-2">
+            <li>
+              <a
+                href="#dashboard"
+                class="block p-3 rounded hover:bg-gray-700 nav-link active"
+                >📊 Dashboard</a
+              >
+            </li>
+            <li>
+              <a
+                href="#articles"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📰 News</a
+              >
+            </li>
+            <li>
+              <a
+                href="#categories"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📁 Categories</a
+              >
+            </li>
+            <li>
+              <a
+                href="#epapers"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📄 E-Papers</a
+              >
+            </li>
+            <li>
+              <a
+                href="#highlights"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >🌟 Highlights</a
+              >
+            </li>
+            <li>
+              <a
+                href="#nit"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📋 NIT</a
+              >
+            </li>
+            <li>
+              <a
+                href="#notifications"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >🔔 Notifications</a
+              >
+            </li>
+            <li>
+              <a
+                href="#inshorts"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📱 Inshorts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#users"
+                class="block p-3 rounded hover:bg-gray-700 nav-link admin-only"
+                style="display: none"
+                >👥 Users</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                onclick="CMS.logout()"
+                class="block p-3 rounded hover:bg-gray-700 text-red-400"
+                >🚪 Logout</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="content-area flex-1 p-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <div class="flex justify-between items-center">
+            <h2 id="page-title" class="text-2xl font-bold text-gray-800">
+              Dashboard
+            </h2>
+            <div class="flex items-center gap-4">
+              <div class="text-sm text-gray-600">
+                Welcome, <span id="user-name">User</span> (<span id="user-role"
+                  >Editor</span
+                >)
+              </div>
+              <button
+                onclick="CMS.showSection('notifications')"
+                class="btn btn-sm"
+              >
+                🔔 Notifications
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area">
+          <!-- Dashboard Content -->
+          <div id="dashboard-content" class="content-section active">
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            >
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                    📰
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total News</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-articles"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-green-100 text-green-500">
+                    📄
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">E-Papers</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-epapers"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                    🌟
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Highlights</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-highlights"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-orange-100 text-orange-500">
+                    📁
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Categories</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-categories"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+              <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                  onclick="CMS.showSection('articles')"
+                  class="btn btn-primary"
+                  data-quick-action="create-article"
+                >
+                  📝 Create Article
+                </button>
+                <button
+                  onclick="CMS.showSection('epapers')"
+                  class="btn btn-success"
+                  data-quick-action="upload-epaper"
+                >
+                  📄 Upload E-Paper
+                </button>
+                <button
+                  onclick="CMS.showSection('highlights')"
+                  class="btn btn-secondary"
+                  data-quick-action="add-highlight"
+                >
+                  🌟 Add Highlight
+                </button>
+                <button
+                  onclick="CMS.showSection('notifications')"
+                  class="btn btn-warning"
+                  data-quick-action="send-notification"
+                >
+                  🔔 Send Notification
+                </button>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Recent Activity</h3>
+                <button
+                  onclick="dashboardModule.loadDashboardData()"
+                  class="btn btn-sm"
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+              <div id="recent-activity" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">
+                  Loading recent activity...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Articles Content -->
+          <div id="articles-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">News Management</h3>
+                <button
+                  onclick="articlesModule.showArticleEditor()"
+                  class="btn btn-primary"
+                >
+                  Create New News
+                </button>
+              </div>
+
+              <div class="mb-4 flex gap-4">
+                <input
+                  type="text"
+                  id="articles-search"
+                  placeholder="Search articles..."
+                  class="form-input"
+                />
+                <select id="articles-filter" class="form-input form-select">
+                  <option value="">All Status</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
+
+              <div id="articles-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">
+                  Loading articles...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Article Editor -->
+          <div id="article-editor-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold" id="editor-title">
+                  Create New News
+                </h3>
+                <button
+                  onclick="CMS.showSection('articles')"
+                  class="btn btn-secondary"
+                >
+                  ← Back to News
+                </button>
+              </div>
+
+              <form id="article-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="form-label">Title *</label>
+                    <input
+                      type="text"
+                      id="article-title"
+                      required
+                      class="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label class="form-label">Category *</label>
+                    <select
+                      id="article-category"
+                      required
+                      class="form-input form-select"
+                    >
+                      <option value="">Select Category</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label">
+                    Excerpt
+                    <span class="text-sm text-gray-500">(Max 25 words)</span>
+                  </label>
+                  <textarea
+                    id="article-excerpt"
+                    rows="3"
+                    class="form-input form-textarea"
+                    placeholder="Brief description of the article (maximum 25 words)..."
+                    maxlength="150"
+                  ></textarea>
+                  <div class="mt-1 text-xs text-gray-500 flex justify-between">
+                    <span>Keep it concise and engaging</span>
+                    <span id="excerpt-word-count">0/25 words</span>
+                  </div>
+                </div>
+
+                <!-- Featured Image Section -->
+                <div>
+                  <label class="form-label">Featured Image</label>
+                  <div
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                  >
+                    <div id="featured-image-preview" class="hidden mb-4">
+                      <img
+                        id="featured-image-preview-img"
+                        src=""
+                        alt="Featured Image Preview"
+                        class="max-w-full h-48 object-cover rounded-lg mx-auto"
+                      />
+                    </div>
+                    <div id="featured-image-upload-area" class="cursor-pointer">
+                      <svg
+                        class="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <p class="mt-2 text-sm text-gray-600">
+                        <span
+                          class="font-medium text-indigo-600 hover:text-indigo-500"
+                          >Click to upload</span
+                        >
+                        or drag and drop
+                      </p>
+                      <p class="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      id="featured-image-input"
+                      accept="image/*"
+                      class="hidden"
+                    />
+                    <div class="mt-2 flex justify-center space-x-2">
+                      <button
+                        type="button"
+                        id="remove-featured-image"
+                        class="btn btn-sm btn-danger hidden"
+                      >
+                        Remove Image
+                      </button>
+                      <button
+                        type="button"
+                        id="change-featured-image"
+                        class="btn btn-sm btn-secondary hidden"
+                      >
+                        Change Image
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label">Content *</label>
+                  <div class="mb-4">
+                    <!-- AI Content Generation Buttons -->
+                    <div
+                      class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4 border border-blue-200"
+                    >
+                      <h4
+                        class="text-lg font-semibold text-blue-900 mb-3 flex items-center"
+                      >
+                        <span class="text-xl mr-2">🤖</span>
+                        AI News Generation
+                      </h4>
+                      <p class="text-blue-700 mb-4 text-sm">
+                        Generate complete news articles with AI-powered content,
+                        SEO optimization, and multi-language support.
+                      </p>
+                      <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+                      >
+                        <button
+                          type="button"
+                          id="create-news-from-content"
+                          class="btn btn-primary flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🤖</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Generate Full News</div>
+                            <div class="text-xs opacity-80">
+                              From pasted content
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="generate-seo-ai"
+                          class="btn btn-secondary flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🔍</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Generate SEO</div>
+                            <div class="text-xs opacity-80">
+                              Meta tags & keywords
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="regenerate-content"
+                          class="btn btn-warning hidden flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🔄</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Regenerate</div>
+                            <div class="text-xs opacity-80">With feedback</div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="translate-to-hindi"
+                          class="btn btn-info hidden flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🇮🇳</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Hindi Version</div>
+                            <div class="text-xs opacity-80">
+                              Translate content
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="translate-to-english"
+                          class="btn btn-info hidden flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🇺🇸</span>
+                          <div class="text-left">
+                            <div class="font-semibold">English Version</div>
+                            <div class="text-xs opacity-80">
+                              Translate content
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="create-hindi-article"
+                          class="btn btn-success hidden flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🇮🇳✨</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Create Hindi Article</div>
+                            <div class="text-xs opacity-80">
+                              New article with translation
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          id="create-english-article"
+                          class="btn btn-success hidden flex items-center justify-center p-3 rounded-lg hover:shadow-md transition-all"
+                        >
+                          <span class="text-lg mr-2">🇺🇸✨</span>
+                          <div class="text-left">
+                            <div class="font-semibold">Create English Article</div>
+                            <div class="text-xs opacity-80">
+                              New article with translation
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Feedback System for Regeneration -->
+                    <div
+                      id="ai-feedback-section"
+                      class="hidden bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-lg mb-4 border border-amber-200"
+                    >
+                      <h4
+                        class="text-sm font-semibold text-amber-800 mb-2 flex items-center"
+                      >
+                        <span class="text-lg mr-2">💬</span>
+                        AI Feedback & Regeneration
+                      </h4>
+                      <p class="text-amber-700 text-xs mb-3">
+                        Provide specific feedback to improve the AI-generated
+                        content. Be detailed about what you want to change.
+                      </p>
+                      <textarea
+                        id="ai-feedback-input"
+                        placeholder="Example: Make the tone more formal, add more statistics, focus on the economic impact, etc..."
+                        class="form-input form-textarea mb-3 border-amber-300 focus:border-amber-500"
+                        rows="3"
+                      ></textarea>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          id="apply-feedback"
+                          class="btn btn-sm btn-primary flex items-center"
+                        >
+                          <span class="mr-1">🔄</span>
+                          Apply Feedback & Regenerate
+                        </button>
+                        <button
+                          type="button"
+                          id="cancel-feedback"
+                          class="btn btn-sm btn-secondary"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <textarea id="article-content" rows="15"></textarea>
+                </div>
+
+                <!-- SEO and Metadata Section -->
+                <div
+                  class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl mb-6 border border-green-200"
+                >
+                  <h3
+                    class="text-lg font-semibold text-green-800 mb-4 flex items-center"
+                  >
+                    <span class="text-xl mr-2">🔍</span>
+                    SEO & Metadata
+                  </h3>
+                  <p class="text-green-700 text-sm mb-4">
+                    Optimize your news for search engines and social media
+                    sharing.
+                  </p>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="form-label">Meta Title</label>
+                      <input
+                        type="text"
+                        id="article-meta-title"
+                        class="form-input"
+                        placeholder="SEO optimized title (max 60 characters)"
+                        maxlength="60"
+                      />
+                      <div class="text-xs text-gray-500 mt-1">
+                        <span id="meta-title-count">0</span>/60 characters
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Meta Description</label>
+                      <textarea
+                        id="article-meta-description"
+                        class="form-input form-textarea"
+                        rows="3"
+                        placeholder="SEO description (max 155 characters)"
+                        maxlength="155"
+                      ></textarea>
+                      <div class="text-xs text-gray-500 mt-1">
+                        <span id="meta-description-count">0</span>/155
+                        characters
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                      <label class="form-label"
+                        >Keywords (comma-separated)</label
+                      >
+                      <input
+                        type="text"
+                        id="article-keywords"
+                        class="form-input"
+                        placeholder="keyword1, keyword2, keyword3"
+                      />
+                    </div>
+                    <div>
+                      <label class="form-label">Language</label>
+                      <select
+                        id="article-language"
+                        class="form-input form-select"
+                      >
+                        <option value="ENGLISH">English</option>
+                        <option value="HINDI">Hindi</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                      <label class="form-label">Tags (comma-separated)</label>
+                      <input
+                        type="text"
+                        id="article-tags"
+                        class="form-input"
+                        placeholder="tag1, tag2, tag3"
+                      />
+                    </div>
+                    <div>
+                      <label class="form-label">Quick Read Summary</label>
+                      <input
+                        type="text"
+                        id="article-quick-read"
+                        class="form-input"
+                        placeholder="Brief summary for social media"
+                        maxlength="150"
+                      />
+                      <div class="text-xs text-gray-500 mt-1">
+                        <span id="quick-read-count">0</span>/150 characters
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="form-label"
+                      >Featured Image URL (Alternative)</label
+                    >
+                    <input
+                      type="url"
+                      id="article-image"
+                      class="form-input"
+                      placeholder="Or enter image URL directly"
+                    />
+                  </div>
+                  <div>
+                    <label class="form-label">Read Time (minutes)</label>
+                    <input
+                      type="number"
+                      id="article-read-time"
+                      class="form-input"
+                      placeholder="Estimated read time"
+                      min="1"
+                      max="60"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-6">
+                  <label class="flex items-center">
+                    <input type="checkbox" id="article-breaking" class="mr-2" />
+                    Breaking News
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="article-top-story"
+                      class="mr-2"
+                    />
+                    Top Story
+                  </label>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onclick="articlesModule.saveArticle('DRAFT')"
+                    class="btn btn-secondary"
+                  >
+                    Save as Draft
+                  </button>
+                  <button
+                    type="button"
+                    onclick="articlesModule.saveArticle('PUBLISHED')"
+                    class="btn btn-success"
+                  >
+                    Publish
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Categories Content -->
+          <div id="categories-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Categories Management</h3>
+                <button
+                  onclick="categoriesModule.showCategoryForm()"
+                  class="btn btn-primary"
+                >
+                  Add Category
+                </button>
+              </div>
+
+              <div id="categories-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">
+                  Loading categories...
+                </p>
+              </div>
+
+              <!-- Category Form -->
+              <div
+                id="category-form-section"
+                class="hidden mt-6 p-4 bg-gray-50 rounded-lg"
+              >
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="text-lg font-semibold" id="category-form-title">
+                    Add New Category
+                  </h4>
+                  <button
+                    type="button"
+                    onclick="categoriesModule.hideCategoryForm()"
+                    class="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                    title="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <form id="new-category-form" class="space-y-4">
+                  <div>
+                    <label class="form-label">Category Name *</label>
+                    <input
+                      type="text"
+                      id="category-name"
+                      class="form-input"
+                      placeholder="Enter category name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="form-label">Description</label>
+                    <textarea
+                      id="category-description"
+                      class="form-input form-textarea"
+                      rows="3"
+                      placeholder="Enter category description"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label class="form-label">Color</label>
+                    <input
+                      type="color"
+                      id="category-color"
+                      class="form-input"
+                      value="#FFA500"
+                    />
+                  </div>
+                  <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                      <span id="category-submit-text">Add Category</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="categoriesModule.hideCategoryForm()"
+                      class="btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- E-Papers Content -->
+          <div id="epapers-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">E-Papers Management</h3>
+                <button
+                  onclick="epapersModule.showEPaperForm()"
+                  class="btn btn-primary"
+                >
+                  Upload E-Paper
+                </button>
+              </div>
+
+              <!-- E-Paper Upload Form -->
+              <div
+                id="epaper-form-section"
+                class="hidden mt-6 p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
+              >
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="text-lg font-semibold" id="epaper-form-title">
+                    Upload New E-Paper
+                  </h4>
+                  <button
+                    type="button"
+                    onclick="epapersModule.hideEPaperForm()"
+                    class="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                    title="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <form id="epaper-form" class="space-y-6">
+                  <!-- Auto-generated title display -->
+                  <div class="bg-blue-50 p-4 rounded-lg">
+                    <label class="block text-sm font-medium text-blue-800 mb-2">
+                      Auto-Generated Title
+                    </label>
+                    <div
+                      id="auto-title"
+                      class="text-lg font-semibold text-blue-900"
+                    >
+                      The Cliff News - <span id="title-date">Loading...</span> -
+                      <span id="title-language">English</span>
+                    </div>
+                    <p class="text-sm text-blue-700 mt-1">
+                      Title will be automatically generated based on date and
+                      language selection
+                    </p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="form-label">Date *</label>
+                      <input
+                        type="date"
+                        id="epaper-date"
+                        class="form-input"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label class="form-label">Language *</label>
+                      <select id="epaper-language" class="form-input" required>
+                        <option value="ENGLISH">English</option>
+                        <option value="HINDI">Hindi</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea
+                      id="epaper-description"
+                      class="form-input form-textarea"
+                      rows="3"
+                      placeholder="Brief description of the e-paper content..."
+                    ></textarea>
+                  </div>
+
+                  <!-- Drag & Drop Upload Area -->
+                  <div>
+                    <label class="form-label">PDF File *</label>
+                    <div
+                      id="upload-area"
+                      class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                    >
+                      <div id="upload-content">
+                        <svg
+                          class="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                        <div class="mt-4">
+                          <p class="text-lg font-medium text-gray-900">
+                            Drop your PDF file here
+                          </p>
+                          <p class="text-sm text-gray-500">
+                            or click to browse
+                          </p>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">
+                          PDF files only, max 50MB
+                        </p>
+                      </div>
+                      <div id="file-preview" class="hidden">
+                        <div class="flex items-center justify-center space-x-3">
+                          <svg
+                            class="h-8 w-8 text-red-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                          <div>
+                            <p
+                              id="file-name"
+                              class="text-sm font-medium text-gray-900"
+                            ></p>
+                            <p id="file-size" class="text-xs text-gray-500"></p>
+                          </div>
+                          <button
+                            type="button"
+                            onclick="epapersModule.clearFile()"
+                            class="text-red-500 hover:text-red-700"
+                          >
+                            <svg
+                              class="h-5 w-5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fill-rule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clip-rule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      id="epaper-file"
+                      accept=".pdf"
+                      class="hidden"
+                      required
+                    />
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button type="submit" class="btn btn-primary flex-1">
+                      <span id="epaper-submit-text">Upload E-Paper</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="epapersModule.hideEPaperForm()"
+                      class="btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div id="epapers-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">
+                  Loading e-papers...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enhanced Highlights Content -->
+          <div id="highlights-content" class="content-section">
+            <!-- Highlights Analytics Dashboard -->
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+            >
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-images text-blue-500 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">Total Highlights</p>
+                    <p
+                      class="text-2xl font-bold text-blue-600"
+                      id="total-highlights-count"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-green-50 p-4 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-eye text-green-500 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">Total Views</p>
+                    <p
+                      class="text-2xl font-bold text-green-600"
+                      id="total-views-count"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-download text-purple-500 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">Downloads</p>
+                    <p
+                      class="text-2xl font-bold text-purple-600"
+                      id="total-downloads-count"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-orange-50 p-4 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-share text-orange-500 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">Shares</p>
+                    <p
+                      class="text-2xl font-bold text-orange-600"
+                      id="total-shares-count"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Highlights Management Interface -->
+            <div class="bg-white rounded-lg shadow">
+              <!-- Header with Filters and Actions -->
+              <div class="p-6 border-b">
+                <div
+                  class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+                >
+                  <div>
+                    <h3 class="text-xl font-semibold text-gray-900">
+                      Highlights Management
+                    </h3>
+                    <p class="text-sm text-gray-600">
+                      Manage your image highlights with advanced analytics
+                    </p>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3">
+                    <button
+                      onclick="highlightsModule.showHighlightForm()"
+                      class="btn btn-primary"
+                    >
+                      <i class="fas fa-plus mr-2"></i>Upload Highlight
+                    </button>
+                    <button
+                      onclick="highlightsModule.loadHighlights()"
+                      class="btn btn-secondary"
+                    >
+                      <i class="fas fa-refresh mr-2"></i>Refresh
+                    </button>
+                    <button
+                      onclick="highlightsModule.showAnalyticsOverview()"
+                      class="btn btn-info"
+                    >
+                      <i class="fas fa-chart-bar mr-2"></i>Analytics
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Filters and Search -->
+                <div
+                  class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Search</label
+                    >
+                    <input
+                      type="text"
+                      id="highlights-search"
+                      placeholder="Search highlights..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Category</label
+                    >
+                    <select
+                      id="highlights-category-filter"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">All Categories</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Priority</label
+                    >
+                    <select
+                      id="highlights-priority-filter"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">All Priorities</option>
+                      <option value="BREAKING">🔥 Breaking</option>
+                      <option value="HIGH">⚡ High</option>
+                      <option value="NORMAL">📰 Normal</option>
+                      <option value="LOW">📄 Low</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Sort By</label
+                    >
+                    <select
+                      id="highlights-sort"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="date">Latest First</option>
+                      <option value="viewCount">Most Viewed</option>
+                      <option value="downloadCount">Most Downloaded</option>
+                      <option value="shareCount">Most Shared</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Highlights Grid -->
+              <div class="p-6">
+                <div
+                  id="highlights-list"
+                  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                >
+                  <div class="text-center py-12">
+                    <i
+                      class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"
+                    ></i>
+                    <p class="text-gray-500">Loading highlights...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enhanced Highlight Upload Modal -->
+          <div id="highlight-modal" class="hidden">
+            <div
+              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+              <div
+                class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              >
+                <div class="flex justify-between items-center mb-6">
+                  <h2 class="text-2xl font-bold">Upload New Highlight</h2>
+                  <button
+                    onclick="highlightsModule.hideHighlightForm()"
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+
+                <form id="highlight-form" class="space-y-6">
+                  <!-- Image Upload Section -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Image Upload</label
+                    >
+                    <div
+                      id="highlight-upload-area"
+                      class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                    >
+                      <div class="text-center">
+                        <i
+                          class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"
+                        ></i>
+                        <p class="text-lg font-semibold">
+                          Drop your image here or click to browse
+                        </p>
+                        <p class="text-sm text-gray-500">
+                          Supports JPG, PNG, WebP • Max 10MB
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      id="highlight-image"
+                      accept="image/*"
+                      class="hidden"
+                    />
+                    <div id="image-preview" class="mt-4"></div>
+                  </div>
+
+                  <!-- Basic Information -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Title (Optional)</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-title"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter highlight title (optional)"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Category</label
+                      >
+                      <select
+                        id="highlight-category"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select Category</option>
+                        <option value="Politics">Politics</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Business">Business</option>
+                        <option value="Health">Health</option>
+                        <option value="Education">Education</option>
+                        <option value="World">World</option>
+                        <option value="Entertainment">Entertainment</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Caption</label
+                    >
+                    <textarea
+                      id="highlight-caption"
+                      rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter detailed caption for the highlight"
+                    ></textarea>
+                  </div>
+
+                  <!-- Advanced Settings -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Priority</label
+                      >
+                      <select
+                        id="highlight-priority"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="NORMAL">📰 Normal</option>
+                        <option value="HIGH">⚡ High</option>
+                        <option value="BREAKING">🔥 Breaking</option>
+                        <option value="LOW">📄 Low</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Location</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-location"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., New Delhi, India"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Tags</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-tags"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="breaking, politics, government (comma separated)"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        class="block text-sm font-medium text-gray-700 mb-2"
+                        >Source</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-source"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., ANI, PTI, Original"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Alt Text</label
+                    >
+                    <input
+                      type="text"
+                      id="highlight-alt-text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Image description for accessibility"
+                    />
+                  </div>
+
+                  <!-- Display Settings -->
+                  <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold mb-4">Display Settings</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label class="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="highlight-is-public"
+                          checked
+                          class="mr-2"
+                        />
+                        <span>Show in public gallery</span>
+                      </label>
+
+                      <label class="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="highlight-allow-download"
+                          checked
+                          class="mr-2"
+                        />
+                        <span>Allow downloads</span>
+                      </label>
+
+                      <label class="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="highlight-allow-sharing"
+                          checked
+                          class="mr-2"
+                        />
+                        <span>Allow social sharing</span>
+                      </label>
+
+                      <label class="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="highlight-add-watermark"
+                          checked
+                          class="mr-2"
+                        />
+                        <span>Add watermark on download</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Form Actions -->
+                  <div class="flex justify-end gap-3 pt-6 border-t">
+                    <button
+                      type="button"
+                      onclick="highlightsModule.hideHighlightForm()"
+                      class="btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save mr-2"></i>Save Highlight
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics Modal -->
+          <div id="analytics-modal"></div>
+
+          <!-- NIT Content -->
+          <div id="nit-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">NIT Management</h3>
+                <button
+                  onclick="nitModule.showNITForm()"
+                  class="btn btn-primary"
+                >
+                  Add NIT Item
+                </button>
+              </div>
+
+              <!-- NIT Filters -->
+              <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Search</label
+                    >
+                    <input
+                      type="text"
+                      id="nit-search"
+                      placeholder="Search NIT items..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Date From</label
+                    >
+                    <input
+                      type="date"
+                      id="nit-date-from"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Date To</label
+                    >
+                    <input
+                      type="date"
+                      id="nit-date-to"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                  <div class="flex gap-2">
+                    <button
+                      onclick="nitModule.applyFilters()"
+                      class="btn btn-primary btn-sm"
+                    >
+                      <i class="fas fa-filter mr-1"></i>Apply Filters
+                    </button>
+                    <button
+                      onclick="nitModule.clearFilters()"
+                      class="btn btn-secondary btn-sm"
+                    >
+                      <i class="fas fa-times mr-1"></i>Clear
+                    </button>
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    <span id="nit-count">0</span> items
+                  </div>
+                </div>
+              </div>
+
+              <div
+                id="nit-list"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                <p class="text-gray-500 text-center py-4">
+                  Loading NIT items...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications Content -->
+          <div id="notifications-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Notification Management</h3>
+                <button
+                  onclick="notificationsModule.showNotificationForm()"
+                  class="btn btn-primary"
+                >
+                  Send Notification
+                </button>
+              </div>
+
+              <div id="notifications-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">
+                  Loading notifications...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inshorts Management -->
+          <div id="inshorts-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Inshorts Management</h3>
+                <div class="flex space-x-2">
+                  <button
+                    class="btn btn-secondary"
+                    onclick="inshortsModule.loadInshorts()"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+              <div id="inshorts-list">
+                <div class="text-center py-8 text-gray-500">
+                  <p>Loading Inshorts...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Content (Admin Only) -->
+          <div id="users-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Users Management</h3>
+                <button
+                  onclick="usersModule.showUserForm()"
+                  class="btn btn-primary"
+                >
+                  Add User
+                </button>
+              </div>
+
+              <div id="users-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">Loading users...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIT Form Modal -->
+    <div id="nit-modal" class="hidden">
+      <div
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div
+          class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        >
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Add NIT Item</h2>
+            <button
+              onclick="nitModule.hideNITForm()"
+              class="text-gray-500 hover:text-gray-700"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          <form id="nit-form" class="space-y-6">
+            <!-- Image Upload Section -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Image Upload</label
+              >
+              <div
+                id="nit-upload-area"
+                class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+              >
+                <div class="text-center">
+                  <i
+                    class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"
+                  ></i>
+                  <p class="text-lg font-semibold">
+                    Drop your image here or click to browse
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Supports JPG, PNG, WebP • Max 10MB
+                  </p>
+                </div>
+              </div>
+              <input
+                type="file"
+                id="nit-image"
+                accept="image/*"
+                class="hidden"
+              />
+              <div id="nit-image-preview" class="mt-4"></div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Title (Optional)</label
+                >
+                <input
+                  type="text"
+                  id="nit-title"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter NIT title (optional)"
+                />
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3">
+              <button
+                type="button"
+                onclick="nitModule.hideNITForm()"
+                class="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Create NIT Item
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core JavaScript -->
+    <script src="/cms/assets/js/main.js?v=3"></script>
+  </body>
+</html>

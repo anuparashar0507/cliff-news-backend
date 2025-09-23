@@ -1,0 +1,1475 @@
+<!-- cms-frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Cliff News - CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js"
+      referrerpolicy="origin"
+    ></script>
+    <style>
+      .sidebar {
+        min-height: 100vh;
+      }
+      .content-area {
+        min-height: 100vh;
+      }
+      .content-section {
+        display: none;
+      }
+      .content-section.active {
+        display: block;
+      }
+      .nav-link.active {
+        background-color: #374151;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <!-- Login Modal -->
+    <div
+      id="login-modal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white p-8 rounded-lg shadow-xl w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">
+          The Cliff News CMS
+        </h2>
+        <form id="login-form">
+          <div class="mb-4">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="email"
+              >Email</label
+            >
+            <input
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="mb-6">
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="password"
+              >Password</label
+            >
+            <input
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            Login
+          </button>
+        </form>
+        <div
+          id="login-error"
+          class="mt-4 text-red-500 text-sm text-center"
+          style="display: none"
+        ></div>
+        <div class="mt-4 text-xs text-gray-600 text-center">
+          <p>Demo Credentials:</p>
+          <p>Admin: admin@thecliffnews.com / admin123</p>
+          <p>Editor: editor@thecliffnews.com / editor123</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="app" class="flex" style="display: none">
+      <!-- Sidebar -->
+      <div class="sidebar bg-gray-800 text-white w-64 p-6">
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-orange-400">The Cliff News</h1>
+          <p class="text-gray-400 text-sm">Content Management System</p>
+        </div>
+
+        <nav id="sidebar-nav">
+          <ul class="space-y-2">
+            <li>
+              <a
+                href="#dashboard"
+                class="block p-3 rounded hover:bg-gray-700 nav-link active"
+                >📊 Dashboard</a
+              >
+            </li>
+            <li>
+              <a
+                href="#articles"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📰 Articles</a
+              >
+            </li>
+            <li>
+              <a
+                href="#categories"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📁 Categories</a
+              >
+            </li>
+            <li>
+              <a
+                href="#epapers"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📄 E-Papers</a
+              >
+            </li>
+            <li>
+              <a
+                href="#highlights"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >🌟 Highlights</a
+              >
+            </li>
+            <li>
+              <a
+                href="#nit"
+                class="block p-3 rounded hover:bg-gray-700 nav-link"
+                >📋 NIT</a
+              >
+            </li>
+            <li>
+              <a
+                href="#users"
+                class="block p-3 rounded hover:bg-gray-700 nav-link admin-only"
+                style="display: none"
+                >👥 Users</a
+              >
+            </li>
+            <li>
+              <a
+                href="#"
+                onclick="logout()"
+                class="block p-3 rounded hover:bg-gray-700 text-red-400"
+                >🚪 Logout</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="content-area flex-1 p-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <div class="flex justify-between items-center">
+            <h2 id="page-title" class="text-2xl font-bold text-gray-800">
+              Dashboard
+            </h2>
+            <div class="text-sm text-gray-600">
+              Welcome, <span id="user-name">User</span> (<span id="user-role"
+                >Editor</span
+              >)
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area">
+          <!-- Dashboard Content -->
+          <div id="dashboard-content" class="content-section active">
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            >
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                    📰
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">
+                      Total Articles
+                    </p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-articles"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-green-100 text-green-500">
+                    📄
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">E-Papers</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-epapers"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                    🌟
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Highlights</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-highlights"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-orange-100 text-orange-500">
+                    📁
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Categories</p>
+                    <p
+                      class="text-2xl font-semibold text-gray-900"
+                      id="total-categories"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg shadow p-6">
+              <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+              <div id="recent-activity" class="space-y-3">
+                <p class="text-gray-500">Loading recent activity...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Articles Content -->
+          <div id="articles-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Articles Management</h3>
+                <button
+                  onclick="showArticleEditor()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Create New Article
+                </button>
+              </div>
+
+              <div class="mb-4 flex gap-4">
+                <input
+                  type="text"
+                  id="articles-search"
+                  placeholder="Search articles..."
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                />
+                <select
+                  id="articles-filter"
+                  class="px-3 py-2 border rounded-lg"
+                >
+                  <option value="">All Status</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
+
+              <div id="articles-list" class="space-y-3">
+                <p class="text-gray-500">Loading articles...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Article Editor -->
+          <div id="article-editor" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold" id="editor-title">
+                  Create New Article
+                </h3>
+                <button
+                  onclick="showSection('articles')"
+                  class="text-gray-500 hover:text-gray-700"
+                >
+                  ← Back to Articles
+                </button>
+              </div>
+
+              <form id="article-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Title *</label
+                    >
+                    <input
+                      type="text"
+                      id="article-title"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Category *</label
+                    >
+                    <select
+                      id="article-category"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Select Category</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium mb-2">Excerpt</label>
+                  <textarea
+                    id="article-excerpt"
+                    rows="3"
+                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    placeholder="Brief description of the article..."
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium mb-2"
+                    >Content *</label
+                  >
+                  <textarea id="article-content" rows="15"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Featured Image URL</label
+                    >
+                    <input
+                      type="url"
+                      id="article-image"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Language</label
+                    >
+                    <select
+                      id="article-language"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="ENGLISH">English</option>
+                      <option value="HINDI">Hindi</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Meta Title</label
+                    >
+                    <input
+                      type="text"
+                      id="article-meta-title"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Meta Description</label
+                    >
+                    <input
+                      type="text"
+                      id="article-meta-description"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-6">
+                  <label class="flex items-center">
+                    <input type="checkbox" id="article-breaking" class="mr-2" />
+                    Breaking News
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="article-top-story"
+                      class="mr-2"
+                    />
+                    Top Story
+                  </label>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onclick="saveArticle('DRAFT')"
+                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Save as Draft
+                  </button>
+                  <button
+                    type="button"
+                    onclick="saveArticle('PUBLISHED')"
+                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Publish
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Categories Content -->
+          <div id="categories-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Categories Management</h3>
+                <button
+                  onclick="showCategoryForm()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Add Category
+                </button>
+              </div>
+
+              <!-- Category Form -->
+              <div
+                id="category-form"
+                class="mb-6 p-4 border rounded-lg"
+                style="display: none"
+              >
+                <h4 class="font-medium mb-4">Add New Category</h4>
+                <form
+                  id="new-category-form"
+                  class="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Name *</label>
+                    <input
+                      type="text"
+                      id="category-name"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Color</label>
+                    <input
+                      type="color"
+                      id="category-color"
+                      value="#FFA500"
+                      class="w-full h-10 border rounded-lg"
+                    />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2"
+                      >Description</label
+                    >
+                    <textarea
+                      id="category-description"
+                      rows="2"
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    ></textarea>
+                  </div>
+                  <div class="md:col-span-2">
+                    <button
+                      type="submit"
+                      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                    >
+                      Save Category
+                    </button>
+                    <button
+                      type="button"
+                      onclick="hideCategoryForm()"
+                      class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div id="categories-list" class="space-y-3">
+                <p class="text-gray-500">Loading categories...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- E-Papers Content -->
+          <div id="epapers-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">E-Papers Management</h3>
+                <button
+                  onclick="showEPaperForm()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Upload E-Paper
+                </button>
+              </div>
+
+              <!-- E-Paper Upload Form -->
+              <div
+                id="epaper-form"
+                class="mb-6 p-4 border rounded-lg"
+                style="display: none"
+              >
+                <h4 class="font-medium mb-4">Upload New E-Paper</h4>
+                <form id="new-epaper-form" class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Title *</label
+                      >
+                      <input
+                        type="text"
+                        id="epaper-title"
+                        required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Date *</label
+                      >
+                      <input
+                        type="date"
+                        id="epaper-date"
+                        required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Language *</label
+                      >
+                      <select
+                        id="epaper-language"
+                        required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="ENGLISH">English</option>
+                        <option value="HINDI">Hindi</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >PDF File *</label
+                    >
+                    <input
+                      type="file"
+                      id="epaper-file"
+                      accept=".pdf"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                    >
+                      Upload E-Paper
+                    </button>
+                    <button
+                      type="button"
+                      onclick="hideEPaperForm()"
+                      class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div id="epapers-list" class="space-y-3">
+                <p class="text-gray-500">Loading e-papers...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlights Content -->
+          <div id="highlights-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Highlights Management</h3>
+                <button
+                  onclick="showHighlightForm()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Add Highlight
+                </button>
+              </div>
+
+              <!-- Highlight Form -->
+              <div
+                id="highlight-form"
+                class="mb-6 p-4 border rounded-lg"
+                style="display: none"
+              >
+                <h4 class="font-medium mb-4">Add New Highlight</h4>
+                <form id="new-highlight-form" class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Title *</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-title"
+                        required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Category</label
+                      >
+                      <input
+                        type="text"
+                        id="highlight-category"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Image *</label
+                    >
+                    <input
+                      type="file"
+                      id="highlight-image"
+                      accept="image/*"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                    >
+                      Save Highlight
+                    </button>
+                    <button
+                      type="button"
+                      onclick="hideHighlightForm()"
+                      class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div
+                id="highlights-list"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
+                <p class="text-gray-500">Loading highlights...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- NIT Content -->
+          <div id="nit-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">NIT Management</h3>
+                <button
+                  onclick="showNITForm()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Add NIT Item
+                </button>
+              </div>
+
+              <!-- NIT Form -->
+              <div
+                id="nit-form"
+                class="mb-6 p-4 border rounded-lg"
+                style="display: none"
+              >
+                <h4 class="font-medium mb-4">Add New NIT Item</h4>
+                <form id="new-nit-form" class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Title *</label
+                      >
+                      <input
+                        type="text"
+                        id="nit-title"
+                        required
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Category</label
+                      >
+                      <input
+                        type="text"
+                        id="nit-category"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Image *</label
+                    >
+                    <input
+                      type="file"
+                      id="nit-image"
+                      accept="image/*"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                    >
+                      Save NIT Item
+                    </button>
+                    <button
+                      type="button"
+                      onclick="hideNITForm()"
+                      class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div
+                id="nit-list"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
+                <p class="text-gray-500">Loading NIT items...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Content (Admin Only) -->
+          <div id="users-content" class="content-section">
+            <div class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold">Users Management</h3>
+                <button
+                  onclick="showUserForm()"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Add User
+                </button>
+              </div>
+
+              <!-- User Form -->
+              <div
+                id="user-form"
+                class="mb-6 p-4 border rounded-lg"
+                style="display: none"
+              >
+                <h4 class="font-medium mb-4">Add New User</h4>
+                <form
+                  id="new-user-form"
+                  class="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Name *</label>
+                    <input
+                      type="text"
+                      id="user-name"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Email *</label
+                    >
+                    <input
+                      type="email"
+                      id="user-email"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2"
+                      >Password *</label
+                    >
+                    <input
+                      type="password"
+                      id="user-password"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Role *</label>
+                    <select
+                      id="user-role"
+                      required
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="EDITOR">Editor</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                  </div>
+                  <div class="md:col-span-2">
+                    <button
+                      type="submit"
+                      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2"
+                    >
+                      Save User
+                    </button>
+                    <button
+                      type="button"
+                      onclick="hideUserForm()"
+                      class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div id="users-list" class="space-y-3">
+                <p class="text-gray-500">Loading users...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let currentUser = null;
+      let authToken = null;
+      let currentEditingArticle = null;
+      const API_BASE = "/api";
+
+      // Initialize app
+      document.addEventListener("DOMContentLoaded", function () {
+        checkAuth();
+        setupEventListeners();
+      });
+
+      // Check authentication
+      function checkAuth() {
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          authToken = token;
+          verifyToken();
+        } else {
+          showLogin();
+        }
+      }
+
+      // Verify token with server
+      async function verifyToken() {
+        try {
+          const response = await fetch(`${API_BASE}/auth/verify`, {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            showApp();
+          } else {
+            localStorage.removeItem("authToken");
+            showLogin();
+          }
+        } catch (error) {
+          console.error("Auth verification failed:", error);
+          showLogin();
+        }
+      }
+
+      // Show login modal
+      function showLogin() {
+        document.getElementById("login-modal").style.display = "flex";
+        document.getElementById("app").style.display = "none";
+      }
+
+      // Show main app
+      function showApp() {
+        document.getElementById("login-modal").style.display = "none";
+        document.getElementById("app").style.display = "flex";
+        document.getElementById("user-name").textContent = currentUser.name;
+        document.getElementById("user-role").textContent = currentUser.role;
+
+        // Show admin-only sections
+        if (currentUser.role === "ADMIN") {
+          document.querySelectorAll(".admin-only").forEach((el) => {
+            el.style.display = "block";
+          });
+        }
+
+        loadDashboard();
+        initTinyMCE();
+      }
+
+      // Setup event listeners
+      function setupEventListeners() {
+        // Login form
+        document
+          .getElementById("login-form")
+          .addEventListener("submit", handleLogin);
+
+        // Navigation links
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            const section = this.getAttribute("href").substring(1);
+            if (section) showSection(section);
+          });
+        });
+
+        // Forms
+        document
+          .getElementById("new-category-form")
+          .addEventListener("submit", handleCreateCategory);
+        document
+          .getElementById("new-epaper-form")
+          .addEventListener("submit", handleCreateEPaper);
+        document
+          .getElementById("new-highlight-form")
+          .addEventListener("submit", handleCreateHighlight);
+        document
+          .getElementById("new-nit-form")
+          .addEventListener("submit", handleCreateNIT);
+        document
+          .getElementById("new-user-form")
+          .addEventListener("submit", handleCreateUser);
+      }
+
+      // Handle login
+      async function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const errorDiv = document.getElementById("login-error");
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem("authToken", authToken);
+            showApp();
+          } else {
+            errorDiv.textContent = data.error || "Login failed";
+            errorDiv.style.display = "block";
+          }
+        } catch (error) {
+          errorDiv.textContent = "Network error. Please try again.";
+          errorDiv.style.display = "block";
+        }
+      }
+
+      // Logout
+      function logout() {
+        localStorage.removeItem("authToken");
+        authToken = null;
+        currentUser = null;
+        showLogin();
+      }
+
+      // Show section
+      function showSection(section) {
+        // Hide all sections
+        document.querySelectorAll(".content-section").forEach((el) => {
+          el.classList.remove("active");
+        });
+
+        // Update navigation
+        document.querySelectorAll(".nav-link").forEach((el) => {
+          el.classList.remove("active");
+        });
+
+        // Show selected section
+        document.getElementById(`${section}-content`).classList.add("active");
+        document.querySelector(`[href="#${section}"]`).classList.add("active");
+
+        // Update page title
+        const titles = {
+          dashboard: "Dashboard",
+          articles: "Articles",
+          categories: "Categories",
+          epapers: "E-Papers",
+          highlights: "Highlights",
+          nit: "NIT",
+          users: "Users",
+        };
+        document.getElementById("page-title").textContent =
+          titles[section] || section;
+
+        // Load section data
+        switch (section) {
+          case "dashboard":
+            loadDashboard();
+            break;
+          case "articles":
+            loadArticles();
+            break;
+          case "categories":
+            loadCategories();
+            break;
+          case "epapers":
+            loadEPapers();
+            break;
+          case "highlights":
+            loadHighlights();
+            break;
+          case "nit":
+            loadNIT();
+            break;
+          case "users":
+            if (currentUser.role === "ADMIN") loadUsers();
+            break;
+        }
+      }
+
+      // Initialize TinyMCE
+      function initTinyMCE() {
+        tinymce.init({
+          selector: "#article-content",
+          height: 400,
+          menubar: false,
+          plugins: [
+            "advlist",
+            "autolink",
+            "lists",
+            "link",
+            "image",
+            "charmap",
+            "preview",
+            "anchor",
+            "searchreplace",
+            "visualblocks",
+            "code",
+            "fullscreen",
+            "insertdatetime",
+            "media",
+            "table",
+            "help",
+            "wordcount",
+          ],
+          toolbar:
+            "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
+          content_style:
+            "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+        });
+      }
+
+      // Load dashboard data
+      async function loadDashboard() {
+        try {
+          // Load stats
+          const [articles, epapers, highlights, categories] = await Promise.all(
+            [
+              apiCall("/articles"),
+              apiCall("/epapers"),
+              apiCall("/highlights"),
+              apiCall("/categories"),
+            ]
+          );
+
+          document.getElementById("total-articles").textContent =
+            articles.pagination?.total || 0;
+          document.getElementById("total-epapers").textContent =
+            epapers.pagination?.total || 0;
+          document.getElementById("total-highlights").textContent =
+            highlights.pagination?.total || 0;
+          document.getElementById("total-categories").textContent =
+            categories.categories?.length || 0;
+
+          // Load recent activity
+          const recentArticles = articles.articles?.slice(0, 5) || [];
+          const activityDiv = document.getElementById("recent-activity");
+          if (recentArticles.length > 0) {
+            activityDiv.innerHTML = recentArticles
+              .map(
+                (article) => `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-medium">${article.title}</p>
+                                <p class="text-sm text-gray-500">by ${
+                                  article.author.name
+                                } • ${new Date(
+                  article.createdAt
+                ).toLocaleDateString()}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded ${getStatusColor(
+                              article.status
+                            )}">${article.status}</span>
+                        </div>
+                    `
+              )
+              .join("");
+          } else {
+            activityDiv.innerHTML =
+              '<p class="text-gray-500">No recent activity</p>';
+          }
+        } catch (error) {
+          console.error("Failed to load dashboard:", error);
+        }
+      }
+
+      // Load articles
+      async function loadArticles() {
+        try {
+          const data = await apiCall("/articles");
+          const articlesDiv = document.getElementById("articles-list");
+
+          if (data.articles && data.articles.length > 0) {
+            articlesDiv.innerHTML = data.articles
+              .map(
+                (article) => `
+                        <div class="flex justify-between items-center p-4 border rounded-lg">
+                            <div class="flex-1">
+                                <h4 class="font-medium">${article.title}</h4>
+                                <p class="text-sm text-gray-600">${
+                                  article.category.name
+                                } • by ${article.author.name}</p>
+                                <p class="text-xs text-gray-500">${new Date(
+                                  article.createdAt
+                                ).toLocaleDateString()}</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-1 text-xs rounded ${getStatusColor(
+                                  article.status
+                                )}">${article.status}</span>
+                                <button onclick="editArticle('${
+                                  article.id
+                                }')" class="text-blue-500 hover:text-blue-700">Edit</button>
+                                <button onclick="deleteArticle('${
+                                  article.id
+                                }')" class="text-red-500 hover:text-red-700">Delete</button>
+                            </div>
+                        </div>
+                    `
+              )
+              .join("");
+          } else {
+            articlesDiv.innerHTML =
+              '<p class="text-gray-500">No articles found</p>';
+          }
+        } catch (error) {
+          console.error("Failed to load articles:", error);
+        }
+      }
+
+      // Load categories for article form
+      async function loadCategoriesForForm() {
+        try {
+          const data = await apiCall("/categories");
+          const select = document.getElementById("article-category");
+          select.innerHTML = '<option value="">Select Category</option>';
+
+          if (data.categories) {
+            data.categories.forEach((category) => {
+              select.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+            });
+          }
+        } catch (error) {
+          console.error("Failed to load categories:", error);
+        }
+      }
+
+      // Show article editor
+      function showArticleEditor(articleId = null) {
+        currentEditingArticle = articleId;
+        document.getElementById("editor-title").textContent = articleId
+          ? "Edit Article"
+          : "Create New Article";
+        loadCategoriesForForm();
+        showSection("article-editor");
+
+        if (articleId) {
+          loadArticleForEdit(articleId);
+        } else {
+          // Clear form for new article
+          document.getElementById("article-form").reset();
+          if (tinymce.get("article-content")) {
+            tinymce.get("article-content").setContent("");
+          }
+        }
+      }
+
+      // Save article
+      async function saveArticle(status) {
+        try {
+          const formData = {
+            title: document.getElementById("article-title").value,
+            content: tinymce.get("article-content").getContent(),
+            excerpt: document.getElementById("article-excerpt").value,
+            categoryId: document.getElementById("article-category").value,
+            featuredImage: document.getElementById("article-image").value,
+            language: document.getElementById("article-language").value,
+            metaTitle: document.getElementById("article-meta-title").value,
+            metaDescription: document.getElementById("article-meta-description")
+              .value,
+            isBreaking: document.getElementById("article-breaking").checked,
+            isTopStory: document.getElementById("article-top-story").checked,
+            status: status,
+          };
+
+          const url = currentEditingArticle
+            ? `/articles/${currentEditingArticle}`
+            : "/articles";
+          const method = currentEditingArticle ? "PUT" : "POST";
+
+          const response = await apiCall(url, method, formData);
+
+          if (response.success) {
+            alert(`Article ${status.toLowerCase()} successfully!`);
+            showSection("articles");
+          } else {
+            alert("Failed to save article");
+          }
+        } catch (error) {
+          console.error("Failed to save article:", error);
+          alert("Failed to save article");
+        }
+      }
+
+      // Load categories
+      async function loadCategories() {
+        try {
+          const data = await apiCall("/categories");
+          const categoriesDiv = document.getElementById("categories-list");
+
+          if (data.categories && data.categories.length > 0) {
+            categoriesDiv.innerHTML = data.categories
+              .map(
+                (category) => `
+                        <div class="flex justify-between items-center p-4 border rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded" style="background-color: ${
+                                  category.color
+                                }"></div>
+                                <div class="ml-3">
+                                    <h4 class="font-medium">${
+                                      category.name
+                                    }</h4>
+                                    <p class="text-sm text-gray-600">${
+                                      category.description || "No description"
+                                    }</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">${
+                                  category._count?.articles || 0
+                                } articles</span>
+                                <button onclick="deleteCategory('${
+                                  category.id
+                                }')" class="text-red-500 hover:text-red-700">Delete</button>
+                            </div>
+                        </div>
+                    `
+              )
+              .join("");
+          } else {
+            categoriesDiv.innerHTML =
+              '<p class="text-gray-500">No categories found</p>';
+          }
+        } catch (error) {
+          console.error("Failed to load categories:", error);
+        }
+      }
+
+      // API call helper
+      async function apiCall(endpoint, method = "GET", data = null) {
+        const options = {
+          method,
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        };
+
+        if (data && method !== "GET") {
+          options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        return await response.json();
+      }
+
+      // Get status color
+      function getStatusColor(status) {
+        switch (status) {
+          case "PUBLISHED":
+            return "bg-green-100 text-green-800";
+          case "DRAFT":
+            return "bg-yellow-100 text-yellow-800";
+          case "ARCHIVED":
+            return "bg-gray-100 text-gray-800";
+          default:
+            return "bg-gray-100 text-gray-800";
+        }
+      }
+
+      // Form show/hide functions
+      function showCategoryForm() {
+        document.getElementById("category-form").style.display = "block";
+      }
+
+      function hideCategoryForm() {
+        document.getElementById("category-form").style.display = "none";
+        document.getElementById("new-category-form").reset();
+      }
+
+      function showEPaperForm() {
+        document.getElementById("epaper-form").style.display = "block";
+        document.getElementById("epaper-date").value = new Date()
+          .toISOString()
+          .split("T")[0];
+      }
+
+      function hideEPaperForm() {
+        document.getElementById("epaper-form").style.display = "none";
+        document.getElementById("new-epaper-form").reset();
+      }
+
+      function showHighlightForm() {
+        document.getElementById("highlight-form").style.display = "block";
+      }
+
+      function hideHighlightForm() {
+        document.getElementById("highlight-form").style.display = "none";
+        document.getElementById("new-highlight-form").reset();
+      }
+
+      function showNITForm() {
+        document.getElementById("nit-form").style.display = "block";
+      }
+
+      function hideNITForm() {
+        document.getElementById("nit-form").style.display = "none";
+        document.getElementById("new-nit-form").reset();
+      }
+
+      function showUserForm() {
+        document.getElementById("user-form").style.display = "block";
+      }
+
+      function hideUserForm() {
+        document.getElementById("user-form").style.display = "none";
+        document.getElementById("new-user-form").reset();
+      }
+
+      // Create category
+      async function handleCreateCategory(e) {
+        e.preventDefault();
+        try {
+          const data = {
+            name: document.getElementById("category-name").value,
+            description: document.getElementById("category-description").value,
+            color: document.getElementById("category-color").value,
+          };
+
+          const response = await apiCall("/categories", "POST", data);
+          if (response.success) {
+            alert("Category created successfully!");
+            hideCategoryForm();
+            loadCategories();
+          } else {
+            alert("Failed to create category");
+          }
+        } catch (error) {
+          console.error("Failed to create category:", error);
+          alert("Failed to create category");
+        }
+      }
+
+      // Placeholder functions for other operations
+      async function loadEPapers() {
+        document.getElementById("epapers-list").innerHTML =
+          '<p class="text-gray-500">E-Papers management coming soon...</p>';
+      }
+
+      async function loadHighlights() {
+        document.getElementById("highlights-list").innerHTML =
+          '<p class="text-gray-500">Highlights management coming soon...</p>';
+      }
+
+      async function loadNIT() {
+        document.getElementById("nit-list").innerHTML =
+          '<p class="text-gray-500">NIT management coming soon...</p>';
+      }
+
+      async function loadUsers() {
+        document.getElementById("users-list").innerHTML =
+          '<p class="text-gray-500">Users management coming soon...</p>';
+      }
+
+      // Placeholder handlers
+      async function handleCreateEPaper(e) {
+        e.preventDefault();
+        alert("E-Paper upload coming soon!");
+      }
+      async function handleCreateHighlight(e) {
+        e.preventDefault();
+        alert("Highlight creation coming soon!");
+      }
+      async function handleCreateNIT(e) {
+        e.preventDefault();
+        alert("NIT creation coming soon!");
+      }
+      async function handleCreateUser(e) {
+        e.preventDefault();
+        alert("User creation coming soon!");
+      }
+      async function editArticle(id) {
+        alert("Article editing coming soon!");
+      }
+      async function deleteArticle(id) {
+        if (confirm("Delete article?")) alert("Article deletion coming soon!");
+      }
+      async function deleteCategory(id) {
+        if (confirm("Delete category?"))
+          alert("Category deletion coming soon!");
+      }
+    </script>
+  </body>
+</html>
