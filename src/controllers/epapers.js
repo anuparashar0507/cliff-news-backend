@@ -1,9 +1,12 @@
 // src/controllers/epapers.js
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 const path = require("path");
 const fs = require("fs");
-
-const prisma = new PrismaClient();
 
 // Upload e-paper
 exports.uploadEPaper = async (req, res) => {
@@ -30,7 +33,9 @@ exports.uploadEPaper = async (req, res) => {
     }
 
     // Check if e-paper already exists for this date and language
-    const existingEPaper = await prisma.ePaper.findFirst({
+    const existingEPaper = await (
+      await getPrisma()
+    ).ePaper.findFirst({
       where: {
         date: new Date(date),
         language: language.toUpperCase(),
@@ -44,7 +49,9 @@ exports.uploadEPaper = async (req, res) => {
     }
 
     // Archive all other e-papers (set status to ARCHIVED)
-    await prisma.ePaper.updateMany({
+    await (
+      await getPrisma()
+    ).ePaper.updateMany({
       where: {
         status: "ACTIVE",
       },
@@ -81,7 +88,9 @@ exports.uploadEPaper = async (req, res) => {
     fs.renameSync(file.path, filePath);
 
     // Create e-paper record
-    const epaper = await prisma.ePaper.create({
+    const epaper = await (
+      await getPrisma()
+    ).ePaper.create({
       data: {
         title: title.trim(),
         date: new Date(date),
@@ -150,7 +159,9 @@ exports.getEPapers = async (req, res) => {
     orderBy[sortBy] = sortOrder;
 
     const [epapers, total] = await Promise.all([
-      prisma.ePaper.findMany({
+      (
+        await getPrisma()
+      ).ePaper.findMany({
         where,
         orderBy,
         skip: offset,
@@ -165,7 +176,7 @@ exports.getEPapers = async (req, res) => {
           },
         },
       }),
-      prisma.ePaper.count({ where }),
+      (await getPrisma()).ePaper.count({ where }),
     ]);
 
     res.json({
@@ -194,7 +205,9 @@ exports.getTodayEPaper = async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // First try to get today's ACTIVE e-paper
-    let epaper = await prisma.ePaper.findFirst({
+    let epaper = await (
+      await getPrisma()
+    ).ePaper.findFirst({
       where: {
         language: language.toUpperCase(),
         status: "ACTIVE",
@@ -208,7 +221,9 @@ exports.getTodayEPaper = async (req, res) => {
 
     // If no paper for today, get the latest ACTIVE paper
     if (!epaper) {
-      epaper = await prisma.ePaper.findFirst({
+      epaper = await (
+        await getPrisma()
+      ).ePaper.findFirst({
         where: {
           language: language.toUpperCase(),
           status: "ACTIVE",
@@ -224,7 +239,9 @@ exports.getTodayEPaper = async (req, res) => {
     }
 
     // Increment view count
-    await prisma.ePaper.update({
+    await (
+      await getPrisma()
+    ).ePaper.update({
       where: { id: epaper.id },
       data: { viewCount: { increment: 1 } },
     });
@@ -249,7 +266,9 @@ exports.getEPaperByDate = async (req, res) => {
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    const epaper = await prisma.ePaper.findFirst({
+    const epaper = await (
+      await getPrisma()
+    ).ePaper.findFirst({
       where: {
         language: language.toUpperCase(),
         date: {
@@ -267,7 +286,9 @@ exports.getEPaperByDate = async (req, res) => {
     }
 
     // Increment download count
-    await prisma.ePaper.update({
+    await (
+      await getPrisma()
+    ).ePaper.update({
       where: { id: epaper.id },
       data: { downloadCount: { increment: 1 } },
     });
@@ -287,7 +308,9 @@ exports.getEPaper = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const epaper = await prisma.ePaper.findUnique({
+    const epaper = await (
+      await getPrisma()
+    ).ePaper.findUnique({
       where: { id },
     });
 
@@ -311,7 +334,9 @@ exports.updateEPaper = async (req, res) => {
     const { id } = req.params;
     const { title, date, language } = req.body;
 
-    const epaper = await prisma.ePaper.findUnique({
+    const epaper = await (
+      await getPrisma()
+    ).ePaper.findUnique({
       where: { id },
     });
 
@@ -326,7 +351,9 @@ exports.updateEPaper = async (req, res) => {
       updateData.language = language.toUpperCase();
     }
 
-    const updatedEPaper = await prisma.ePaper.update({
+    const updatedEPaper = await (
+      await getPrisma()
+    ).ePaper.update({
       where: { id },
       data: updateData,
     });
@@ -346,7 +373,9 @@ exports.deleteEPaper = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const epaper = await prisma.ePaper.findUnique({
+    const epaper = await (
+      await getPrisma()
+    ).ePaper.findUnique({
       where: { id },
     });
 
@@ -365,7 +394,9 @@ exports.deleteEPaper = async (req, res) => {
     }
 
     // Delete from database
-    await prisma.ePaper.delete({
+    await (
+      await getPrisma()
+    ).ePaper.delete({
       where: { id },
     });
 
@@ -399,7 +430,9 @@ exports.getEPapersCalendar = async (req, res) => {
       };
     }
 
-    const epapers = await prisma.ePaper.findMany({
+    const epapers = await (
+      await getPrisma()
+    ).ePaper.findMany({
       where,
       select: {
         id: true,
@@ -464,16 +497,22 @@ exports.getEPaperAnalytics = async (req, res) => {
       languageStats,
       recentEpapers,
     ] = await Promise.all([
-      prisma.ePaper.count(),
-      prisma.ePaper.count({ where: { status: "ACTIVE" } }),
-      prisma.ePaper.count({ where: { status: "ARCHIVED" } }),
-      prisma.ePaper.aggregate({
+      (await getPrisma()).ePaper.count(),
+      (await getPrisma()).ePaper.count({ where: { status: "ACTIVE" } }),
+      (await getPrisma()).ePaper.count({ where: { status: "ARCHIVED" } }),
+      (
+        await getPrisma()
+      ).ePaper.aggregate({
         _sum: { downloadCount: true },
       }),
-      prisma.ePaper.aggregate({
+      (
+        await getPrisma()
+      ).ePaper.aggregate({
         _sum: { viewCount: true },
       }),
-      prisma.ePaper.findMany({
+      (
+        await getPrisma()
+      ).ePaper.findMany({
         where: {
           date: { gte: startDate },
         },
@@ -488,12 +527,16 @@ exports.getEPaperAnalytics = async (req, res) => {
           viewCount: true,
         },
       }),
-      prisma.ePaper.groupBy({
+      (
+        await getPrisma()
+      ).ePaper.groupBy({
         by: ["language"],
         _count: { language: true },
         where: { date: { gte: startDate } },
       }),
-      prisma.ePaper.findMany({
+      (
+        await getPrisma()
+      ).ePaper.findMany({
         where: { date: { gte: startDate } },
         orderBy: { createdAt: "desc" },
         take: 10,

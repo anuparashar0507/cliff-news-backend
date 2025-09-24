@@ -1,8 +1,11 @@
 // src/controllers/categories.js
-const { PrismaClient } = require("@prisma/client");
-const { createSlug, generateUniqueSlug } = require("../utils/slugify");
+const getPrismaClient = require("../lib/prisma");
 
-const prisma = new PrismaClient();
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
+const { createSlug, generateUniqueSlug } = require("../utils/slugify");
 
 // Get all categories
 exports.getCategories = async (req, res) => {
@@ -25,7 +28,9 @@ exports.getCategories = async (req, res) => {
       };
     }
 
-    const categories = await prisma.category.findMany({
+    const categories = await (
+      await getPrisma()
+    ).category.findMany({
       where,
       include,
       orderBy: { name: "asc" },
@@ -46,7 +51,9 @@ exports.getCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const category = await prisma.category.findUnique({
+    const category = await (
+      await getPrisma()
+    ).category.findUnique({
       where: { id },
       include: {
         _count: {
@@ -78,7 +85,9 @@ exports.getCategoryBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const category = await prisma.category.findUnique({
+    const category = await (
+      await getPrisma()
+    ).category.findUnique({
       where: { slug },
       include: {
         _count: {
@@ -118,7 +127,9 @@ exports.createCategory = async (req, res) => {
     // Generate unique slug
     const slug = await generateUniqueSlug(name, "category");
 
-    const category = await prisma.category.create({
+    const category = await (
+      await getPrisma()
+    ).category.create({
       data: {
         name: name.trim(),
         slug,
@@ -147,7 +158,9 @@ exports.updateCategory = async (req, res) => {
     const { name, description, color, isActive } = req.body;
 
     // Check if category exists
-    const existingCategory = await prisma.category.findUnique({
+    const existingCategory = await (
+      await getPrisma()
+    ).category.findUnique({
       where: { id },
     });
 
@@ -170,7 +183,9 @@ exports.updateCategory = async (req, res) => {
     if (color) updateData.color = color;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    const category = await prisma.category.update({
+    const category = await (
+      await getPrisma()
+    ).category.update({
       where: { id },
       data: updateData,
       include: {
@@ -203,7 +218,9 @@ exports.deleteCategory = async (req, res) => {
     const { id } = req.params;
 
     // Check if category exists and has articles
-    const category = await prisma.category.findUnique({
+    const category = await (
+      await getPrisma()
+    ).category.findUnique({
       where: { id },
       include: {
         _count: {
@@ -223,7 +240,9 @@ exports.deleteCategory = async (req, res) => {
       });
     }
 
-    await prisma.category.delete({
+    await (
+      await getPrisma()
+    ).category.delete({
       where: { id },
     });
 
@@ -240,7 +259,9 @@ exports.deleteCategory = async (req, res) => {
 // Get categories with article counts for dashboard
 exports.getCategoriesStats = async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({
+    const categories = await (
+      await getPrisma()
+    ).category.findMany({
       where: { isActive: true },
       include: {
         _count: {
@@ -262,7 +283,9 @@ exports.getCategoriesStats = async (req, res) => {
     // Calculate total articles per category
     const categoriesWithStats = await Promise.all(
       categories.map(async (category) => {
-        const totalArticles = await prisma.article.count({
+        const totalArticles = await (
+          await getPrisma()
+        ).article.count({
           where: {
             categoryId: category.id,
             status: "PUBLISHED",

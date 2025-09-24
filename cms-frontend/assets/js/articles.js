@@ -221,6 +221,8 @@ if (typeof articlesModule === "undefined") {
         this.loadArticleForEdit(articleId);
       } else {
         this.clearArticleForm();
+        // Show buttons for new articles (default to ENGLISH)
+        this.updateLanguageButtons("ENGLISH");
       }
 
       // Setup auto-save for editing
@@ -280,10 +282,13 @@ if (typeof articlesModule === "undefined") {
         document.getElementById("article-top-story").checked =
           article.isTopStory || false;
 
-        // Set TinyMCE content
-        if (window.tinymce && tinymce.get("article-content")) {
-          tinymce.get("article-content").setContent(article.content || "");
-        }
+        // Set TinyMCE content with delay to ensure editor is fully ready
+        setTimeout(() => {
+          this.setTinyMCEContent(article.content || "");
+        }, 800);
+
+        // Show language-specific buttons after loading the article
+        this.updateLanguageButtons(article.language || "ENGLISH");
 
         console.log("✅ Article loaded for editing");
       } catch (error) {
@@ -1361,6 +1366,71 @@ if (typeof articlesModule === "undefined") {
       return document.getElementById("article-content").value || "";
     },
 
+    // Set TinyMCE content with retry mechanism and error handling
+    setTinyMCEContent: function (content, maxRetries = 10) {
+      console.log("🔄 setTinyMCEContent called with content length:", content.length);
+      console.log("📝 Content preview:", content.substring(0, 100) + "...");
+
+      // Sanitize content for TinyMCE
+      const sanitizeContent = (html) => {
+        if (!html) return "";
+
+        // Basic sanitization to prevent TinyMCE parsing errors
+        return html
+          .replace(/\u0000/g, "") // Remove null characters
+          .replace(/\ufeff/g, "") // Remove BOM characters
+          .trim();
+      };
+
+      const attemptSetContent = (retryCount = 0) => {
+        if (window.tinymce && tinymce.get("article-content")) {
+          try {
+            const sanitizedContent = sanitizeContent(content);
+            tinymce.get("article-content").setContent(sanitizedContent);
+            console.log("✅ TinyMCE content set successfully");
+
+            // Verify content was actually set
+            setTimeout(() => {
+              try {
+                const currentContent = tinymce.get("article-content").getContent();
+                console.log("🔍 Verification - Content in editor length:", currentContent.length);
+                if (currentContent.length === 0 && content.length > 0) {
+                  console.warn("⚠️ Content was cleared after setting! Something else is clearing it.");
+                }
+              } catch (verifyError) {
+                console.error("Error during content verification:", verifyError);
+              }
+            }, 100);
+            return;
+          } catch (error) {
+            console.error("❌ TinyMCE setContent failed:", error);
+            console.log("🔄 Attempting fallback to textarea...");
+
+            // Fallback to textarea
+            const textarea = document.getElementById("article-content");
+            if (textarea) {
+              textarea.value = content;
+              console.log("✅ Content set in textarea as fallback");
+            }
+            return;
+          }
+        }
+
+        if (retryCount < maxRetries) {
+          console.log(`⏳ TinyMCE not ready, retrying... (${retryCount + 1}/${maxRetries})`);
+          setTimeout(() => attemptSetContent(retryCount + 1), 200);
+        } else {
+          console.warn("❌ Failed to set TinyMCE content after retries, falling back to textarea");
+          const textarea = document.getElementById("article-content");
+          if (textarea) {
+            textarea.value = content;
+          }
+        }
+      };
+
+      attemptSetContent();
+    },
+
     // Setup excerpt word count validation
     setupExcerptValidation: function () {
       const excerptTextarea = document.getElementById("article-excerpt");
@@ -1449,13 +1519,13 @@ if (typeof articlesModule === "undefined") {
 
         if (response.success) {
           CMS.showNotification(
-            "✅ New Hindi article created successfully!",
+            "✅ New Hindi article created successfully! Opening in editor...",
             "success"
           );
 
-          // Redirect to the new Hindi article
+          // Open the translated article as a separate article (redirect to edit it)
           setTimeout(() => {
-            window.location.href = `/cms/articles/edit?id=${response.data.translatedArticle.id}`;
+            window.location.href = `/cms/?section=article-editor&id=${response.data.translatedArticle.id}`;
           }, 1500);
         }
       } catch (error) {
@@ -1486,13 +1556,13 @@ if (typeof articlesModule === "undefined") {
 
         if (response.success) {
           CMS.showNotification(
-            "✅ New English article created successfully!",
+            "✅ New English article created successfully! Opening in editor...",
             "success"
           );
 
-          // Redirect to the new English article
+          // Open the translated article as a separate article (redirect to edit it)
           setTimeout(() => {
-            window.location.href = `/cms/articles/edit?id=${response.data.translatedArticle.id}`;
+            window.location.href = `/cms/?section=article-editor&id=${response.data.translatedArticle.id}`;
           }, 1500);
         }
       } catch (error) {
@@ -1503,7 +1573,12 @@ if (typeof articlesModule === "undefined") {
 
     // Get current article ID from URL or form
     getCurrentArticleId: function () {
-      // Check if we're editing an existing article
+      // First check if we have a current editing article in memory
+      if (currentEditingArticle) {
+        return currentEditingArticle;
+      }
+
+      // Fallback to URL parameters for direct navigation
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get("id");
     },

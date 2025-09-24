@@ -405,13 +405,12 @@ exports.generateInshortSEO = async (title, content, language = "ENGLISH") => {
           };
         }
       }
-
-      // Fallback if parsing fails
-      return generateFallbackInshortSEO(title, content);
     } catch (parseError) {
-      console.error("JSON parsing error:", parseError);
-      return generateFallbackInshortSEO(title, content);
+      console.error("Failed to parse Gemini Inshort SEO response:", parseError);
     }
+
+    // Fallback if parsing fails
+    return generateFallbackInshortSEO(title, content);
   } catch (error) {
     console.error("Gemini Inshort SEO generation error:", error);
     return generateFallbackInshortSEO(title, content);

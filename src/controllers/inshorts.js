@@ -1,12 +1,15 @@
 // src/controllers/inshorts.js
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 const {
   generateInshortContent,
   generateInshortSEO,
 } = require("../services/geminiService");
 const { createSlug } = require("../utils/slugify");
-
-const prisma = new PrismaClient();
 
 // Generate Inshort from Article
 exports.generateInshort = async (req, res) => {
@@ -15,7 +18,9 @@ exports.generateInshort = async (req, res) => {
     const { language = "ENGLISH" } = req.body;
 
     // Get the source article
-    const article = await prisma.article.findUnique({
+    const article = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id: articleId },
       include: {
         author: true,
@@ -42,7 +47,9 @@ exports.generateInshort = async (req, res) => {
     );
 
     // Create the Inshort
-    const inshort = await prisma.inshort.create({
+    const inshort = await (
+      await getPrisma()
+    ).inshort.create({
       data: {
         title: inshortContent.title,
         slug: createSlug(inshortContent.title),
@@ -102,7 +109,9 @@ exports.getInshorts = async (req, res) => {
       ];
     }
 
-    const inshorts = await prisma.inshort.findMany({
+    const inshorts = await (
+      await getPrisma()
+    ).inshort.findMany({
       where,
       include: {
         sourceArticle: {
@@ -131,7 +140,7 @@ exports.getInshorts = async (req, res) => {
       skip: parseInt(offset),
     });
 
-    const total = await prisma.inshort.count({ where });
+    const total = await (await getPrisma()).inshort.count({ where });
 
     res.json({
       success: true,
@@ -154,7 +163,9 @@ exports.getInshort = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const inshort = await prisma.inshort.findUnique({
+    const inshort = await (
+      await getPrisma()
+    ).inshort.findUnique({
       where: { id },
       include: {
         sourceArticle: {
@@ -211,7 +222,9 @@ exports.updateInshort = async (req, res) => {
     } = req.body;
 
     // Check if Inshort exists
-    const existingInshort = await prisma.inshort.findUnique({
+    const existingInshort = await (
+      await getPrisma()
+    ).inshort.findUnique({
       where: { id },
     });
 
@@ -240,7 +253,9 @@ exports.updateInshort = async (req, res) => {
       updateData.tags = tags;
     }
 
-    const inshort = await prisma.inshort.update({
+    const inshort = await (
+      await getPrisma()
+    ).inshort.update({
       where: { id },
       data: updateData,
       include: {
@@ -284,7 +299,9 @@ exports.deleteInshort = async (req, res) => {
     const { id } = req.params;
 
     // Check if Inshort exists
-    const inshort = await prisma.inshort.findUnique({
+    const inshort = await (
+      await getPrisma()
+    ).inshort.findUnique({
       where: { id },
     });
 
@@ -293,12 +310,16 @@ exports.deleteInshort = async (req, res) => {
     }
 
     // Delete associated tags first
-    await prisma.inshortTag.deleteMany({
+    await (
+      await getPrisma()
+    ).inshortTag.deleteMany({
       where: { inshortId: id },
     });
 
     // Delete the Inshort
-    await prisma.inshort.delete({
+    await (
+      await getPrisma()
+    ).inshort.delete({
       where: { id },
     });
 
@@ -317,7 +338,9 @@ exports.getInshortsByArticle = async (req, res) => {
   try {
     const { articleId } = req.params;
 
-    const inshorts = await prisma.inshort.findMany({
+    const inshorts = await (
+      await getPrisma()
+    ).inshort.findMany({
       where: { sourceArticleId: articleId },
       include: {
         author: {
@@ -352,7 +375,9 @@ exports.publishInshort = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const inshort = await prisma.inshort.update({
+    const inshort = await (
+      await getPrisma()
+    ).inshort.update({
       where: { id },
       data: {
         status: "PUBLISHED",

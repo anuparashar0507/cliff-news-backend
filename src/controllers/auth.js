@@ -1,9 +1,12 @@
 // src/controllers/auth.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
 
-const prisma = new PrismaClient();
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -29,7 +32,9 @@ exports.login = async (req, res) => {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
+    const user = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { email: email.toLowerCase() },
       select: {
         id: true,
@@ -85,7 +90,9 @@ exports.createUser = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
@@ -99,7 +106,9 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await (
+      await getPrisma()
+    ).user.create({
       data: {
         email: email.toLowerCase(),
         password: hashedPassword,
@@ -142,7 +151,9 @@ exports.getUsers = async (req, res) => {
     }
 
     const [users, total] = await Promise.all([
-      prisma.user.findMany({
+      (
+        await getPrisma()
+      ).user.findMany({
         where,
         select: {
           id: true,
@@ -159,7 +170,7 @@ exports.getUsers = async (req, res) => {
         skip: offset,
         take: parseInt(limit),
       }),
-      prisma.user.count({ where }),
+      (await getPrisma()).user.count({ where }),
     ]);
 
     res.json({
@@ -185,7 +196,9 @@ exports.updateUser = async (req, res) => {
     const { name, email, role, isActive, password } = req.body;
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { id },
     });
 
@@ -204,7 +217,9 @@ exports.updateUser = async (req, res) => {
     }
 
     // Update user
-    const user = await prisma.user.update({
+    const user = await (
+      await getPrisma()
+    ).user.update({
       where: { id },
       data: updateData,
       select: {
@@ -236,7 +251,9 @@ exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
     // Check if user exists
-    const user = await prisma.user.findUnique({
+    const user = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { id },
       include: {
         _count: {
@@ -262,7 +279,9 @@ exports.deleteUser = async (req, res) => {
     }
 
     // Delete user
-    await prisma.user.delete({
+    await (
+      await getPrisma()
+    ).user.delete({
       where: { id },
     });
 
@@ -279,7 +298,9 @@ exports.deleteUser = async (req, res) => {
 // Get current user profile
 exports.getProfile = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
@@ -310,7 +331,9 @@ exports.updateProfile = async (req, res) => {
     const { name, email, currentPassword, newPassword } = req.body;
 
     // Get current user
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await (
+      await getPrisma()
+    ).user.findUnique({
       where: { id: req.user.id },
     });
 
@@ -350,7 +373,9 @@ exports.updateProfile = async (req, res) => {
     }
 
     // Update user
-    const user = await prisma.user.update({
+    const user = await (
+      await getPrisma()
+    ).user.update({
       where: { id: req.user.id },
       data: updateData,
       select: {

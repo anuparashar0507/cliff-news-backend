@@ -1,9 +1,12 @@
 // src/controllers/nit.js
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 const path = require("path");
 const fs = require("fs");
-
-const prisma = new PrismaClient();
 
 // Create new NIT item
 exports.createNIT = async (req, res) => {
@@ -19,7 +22,9 @@ exports.createNIT = async (req, res) => {
       return res.status(400).json({ error: "Title is required" });
     }
 
-    const nit = await prisma.nIT.create({
+    const nit = await (
+      await getPrisma()
+    ).nIT.create({
       data: {
         title: title.trim(),
         imageUrl:
@@ -75,13 +80,15 @@ exports.getNITs = async (req, res) => {
     orderBy[sortBy] = sortOrder;
 
     const [nits, total] = await Promise.all([
-      prisma.nIT.findMany({
+      (
+        await getPrisma()
+      ).nIT.findMany({
         where,
         orderBy,
         skip: offset,
         take: parseInt(limit),
       }),
-      prisma.nIT.count({ where }),
+      (await getPrisma()).nIT.count({ where }),
     ]);
 
     res.json({
@@ -107,7 +114,9 @@ exports.updateNIT = async (req, res) => {
     const { title, category } = req.body;
     const file = req.file;
 
-    const existingNIT = await prisma.nIT.findUnique({
+    const existingNIT = await (
+      await getPrisma()
+    ).nIT.findUnique({
       where: { id },
     });
 
@@ -126,7 +135,9 @@ exports.updateNIT = async (req, res) => {
         `/uploads/images/${file.filename}`;
     }
 
-    const nit = await prisma.nIT.update({
+    const nit = await (
+      await getPrisma()
+    ).nIT.update({
       where: { id },
       data: updateData,
     });
@@ -146,7 +157,9 @@ exports.deleteNIT = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const nit = await prisma.nIT.findUnique({
+    const nit = await (
+      await getPrisma()
+    ).nIT.findUnique({
       where: { id },
     });
 
@@ -154,7 +167,9 @@ exports.deleteNIT = async (req, res) => {
       return res.status(404).json({ error: "NIT item not found" });
     }
 
-    await prisma.nIT.delete({
+    await (
+      await getPrisma()
+    ).nIT.delete({
       where: { id },
     });
 

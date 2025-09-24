@@ -1,8 +1,11 @@
 // src/controllers/notifications.js
-const { PrismaClient } = require("@prisma/client");
-const OneSignal = require("onesignal-node");
+const getPrismaClient = require("../lib/prisma");
 
-const prisma = new PrismaClient();
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
+const OneSignal = require("onesignal-node");
 
 // Initialize OneSignal client (optional)
 let client = null;

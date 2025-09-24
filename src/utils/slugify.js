@@ -17,8 +17,7 @@ exports.generateUniqueSlug = async (
   field = "slug",
   excludeId = null
 ) => {
-  const { PrismaClient } = require("@prisma/client");
-  const prisma = new PrismaClient();
+  const prisma = require("../lib/prisma");
 
   let baseSlug = this.createSlug(text);
   let slug = baseSlug;
@@ -70,7 +69,7 @@ exports.generateExcerpt = (content, maxWords = 25) => {
 
 // Validate excerpt word count
 exports.validateExcerpt = (excerpt, maxWords = 25) => {
-  if (!excerpt || typeof excerpt !== 'string') return false;
+  if (!excerpt || typeof excerpt !== "string") return false;
 
   const words = excerpt.trim().split(/\s+/);
   return words.length <= maxWords;
@@ -78,7 +77,7 @@ exports.validateExcerpt = (excerpt, maxWords = 25) => {
 
 // Truncate excerpt to word limit if needed
 exports.truncateExcerpt = (excerpt, maxWords = 25) => {
-  if (!excerpt || typeof excerpt !== 'string') return "";
+  if (!excerpt || typeof excerpt !== "string") return "";
 
   const words = excerpt.trim().split(/\s+/);
 

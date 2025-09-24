@@ -1,11 +1,14 @@
 // src/controllers/highlights.js
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
-
-const prisma = new PrismaClient();
 
 // Utility function to get client IP
 const getClientIP = (req) => {
@@ -87,7 +90,9 @@ exports.createHighlight = async (req, res) => {
       .jpeg({ quality: 80 })
       .toFile(thumbnailPath);
 
-    const highlight = await prisma.highlight.create({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.create({
       data: {
         title: finalTitle,
         caption: caption?.trim() || null,
@@ -202,7 +207,9 @@ exports.getHighlights = async (req, res) => {
     orderBy[sortBy] = sortOrder;
 
     const [highlights, total] = await Promise.all([
-      prisma.highlight.findMany({
+      (
+        await getPrisma()
+      ).highlight.findMany({
         where,
         orderBy,
         skip: offset,
@@ -213,7 +220,7 @@ exports.getHighlights = async (req, res) => {
           },
         },
       }),
-      prisma.highlight.count({ where }),
+      (await getPrisma()).highlight.count({ where }),
     ]);
 
     res.json({
@@ -237,7 +244,9 @@ exports.getHighlight = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const highlight = await prisma.highlight.findUnique({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.findUnique({
       where: { id },
       include: {
         uploader: {
@@ -251,7 +260,9 @@ exports.getHighlight = async (req, res) => {
     }
 
     // Track view interaction
-    await prisma.highlightInteraction.create({
+    await (
+      await getPrisma()
+    ).highlightInteraction.create({
       data: {
         highlightId: id,
         interactionType: "VIEW",
@@ -267,7 +278,9 @@ exports.getHighlight = async (req, res) => {
     });
 
     // Update view count
-    await prisma.highlight.update({
+    await (
+      await getPrisma()
+    ).highlight.update({
       where: { id },
       data: { viewCount: { increment: 1 } },
     });
@@ -288,7 +301,9 @@ exports.trackInteraction = async (req, res) => {
     const { id } = req.params;
     const { type, platform, metadata = {} } = req.body;
 
-    const interaction = await prisma.highlightInteraction.create({
+    const interaction = await (
+      await getPrisma()
+    ).highlightInteraction.create({
       data: {
         highlightId: id,
         interactionType: type.toUpperCase(),
@@ -321,7 +336,9 @@ exports.trackInteraction = async (req, res) => {
     }
 
     if (Object.keys(updateData).length > 0) {
-      await prisma.highlight.update({
+      await (
+        await getPrisma()
+      ).highlight.update({
         where: { id },
         data: updateData,
       });
@@ -343,7 +360,9 @@ exports.downloadHighlight = async (req, res) => {
     const { id } = req.params;
     const { format = "original", type = "jpg" } = req.query;
 
-    const highlight = await prisma.highlight.findUnique({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.findUnique({
       where: { id },
     });
 
@@ -352,7 +371,9 @@ exports.downloadHighlight = async (req, res) => {
     }
 
     // Track download interaction
-    await prisma.highlightInteraction.create({
+    await (
+      await getPrisma()
+    ).highlightInteraction.create({
       data: {
         highlightId: id,
         interactionType: "DOWNLOAD",
@@ -366,7 +387,9 @@ exports.downloadHighlight = async (req, res) => {
     });
 
     // Update download count
-    await prisma.highlight.update({
+    await (
+      await getPrisma()
+    ).highlight.update({
       where: { id },
       data: { downloadCount: { increment: 1 } },
     });
@@ -472,7 +495,9 @@ exports.updateHighlight = async (req, res) => {
 
     const file = req.file;
 
-    const existingHighlight = await prisma.highlight.findUnique({
+    const existingHighlight = await (
+      await getPrisma()
+    ).highlight.findUnique({
       where: { id },
     });
 
@@ -532,7 +557,9 @@ exports.updateHighlight = async (req, res) => {
       }
     }
 
-    const highlight = await prisma.highlight.update({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.update({
       where: { id },
       data: updateData,
     });
@@ -552,7 +579,9 @@ exports.deleteHighlight = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const highlight = await prisma.highlight.findUnique({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.findUnique({
       where: { id },
     });
 
@@ -584,7 +613,9 @@ exports.deleteHighlight = async (req, res) => {
     }
 
     // Delete from database (cascade will handle interactions and shares)
-    await prisma.highlight.delete({
+    await (
+      await getPrisma()
+    ).highlight.delete({
       where: { id },
     });
 
@@ -612,24 +643,32 @@ exports.bulkOperation = async (req, res) => {
     let result;
     switch (action) {
       case "delete":
-        result = await prisma.highlight.deleteMany({
+        result = await (
+          await getPrisma()
+        ).highlight.deleteMany({
           where: { id: { in: highlightIds } },
         });
         break;
       case "update_category":
-        result = await prisma.highlight.updateMany({
+        result = await (
+          await getPrisma()
+        ).highlight.updateMany({
           where: { id: { in: highlightIds } },
           data: { category: data.category },
         });
         break;
       case "update_priority":
-        result = await prisma.highlight.updateMany({
+        result = await (
+          await getPrisma()
+        ).highlight.updateMany({
           where: { id: { in: highlightIds } },
           data: { priority: data.priority },
         });
         break;
       case "toggle_public":
-        result = await prisma.highlight.updateMany({
+        result = await (
+          await getPrisma()
+        ).highlight.updateMany({
           where: { id: { in: highlightIds } },
           data: { isPublic: data.isPublic },
         });
@@ -655,7 +694,9 @@ exports.getHighlightAnalytics = async (req, res) => {
     const { id } = req.params;
     const { period = "30days" } = req.query;
 
-    const highlight = await prisma.highlight.findUnique({
+    const highlight = await (
+      await getPrisma()
+    ).highlight.findUnique({
       where: { id },
     });
 
@@ -682,13 +723,17 @@ exports.getHighlightAnalytics = async (req, res) => {
 
     // Get interaction statistics
     const [interactions, shares] = await Promise.all([
-      prisma.highlightInteraction.findMany({
+      (
+        await getPrisma()
+      ).highlightInteraction.findMany({
         where: {
           highlightId: id,
           createdAt: { gte: startDate },
         },
       }),
-      prisma.highlightShare.findMany({
+      (
+        await getPrisma()
+      ).highlightShare.findMany({
         where: {
           highlightId: id,
           createdAt: { gte: startDate },
@@ -749,7 +794,9 @@ exports.getHighlightsByCategory = async (req, res) => {
     const { category } = req.params;
     const { limit = 10 } = req.query;
 
-    const highlights = await prisma.highlight.findMany({
+    const highlights = await (
+      await getPrisma()
+    ).highlight.findMany({
       where: {
         category: {
           contains: category,
@@ -782,7 +829,9 @@ exports.getRecentHighlights = async (req, res) => {
       where.priority = priority.toUpperCase();
     }
 
-    const highlights = await prisma.highlight.findMany({
+    const highlights = await (
+      await getPrisma()
+    ).highlight.findMany({
       where,
       orderBy: { date: "desc" },
       take: parseInt(limit),
@@ -801,7 +850,9 @@ exports.getRecentHighlights = async (req, res) => {
 // Get highlight categories
 exports.getHighlightCategories = async (req, res) => {
   try {
-    const categories = await prisma.highlight.findMany({
+    const categories = await (
+      await getPrisma()
+    ).highlight.findMany({
       where: {
         category: {
           not: null,
@@ -859,22 +910,32 @@ exports.getHighlightsAnalytics = async (req, res) => {
       categoryStats,
       topHighlights,
     ] = await Promise.all([
-      prisma.highlight.count({
+      (
+        await getPrisma()
+      ).highlight.count({
         where: { createdAt: { gte: startDate } },
       }),
-      prisma.highlight.aggregate({
+      (
+        await getPrisma()
+      ).highlight.aggregate({
         where: { createdAt: { gte: startDate } },
         _sum: { viewCount: true },
       }),
-      prisma.highlight.aggregate({
+      (
+        await getPrisma()
+      ).highlight.aggregate({
         where: { createdAt: { gte: startDate } },
         _sum: { downloadCount: true },
       }),
-      prisma.highlight.aggregate({
+      (
+        await getPrisma()
+      ).highlight.aggregate({
         where: { createdAt: { gte: startDate } },
         _sum: { shareCount: true },
       }),
-      prisma.highlight.groupBy({
+      (
+        await getPrisma()
+      ).highlight.groupBy({
         by: ["category"],
         where: {
           createdAt: { gte: startDate },
@@ -883,7 +944,9 @@ exports.getHighlightsAnalytics = async (req, res) => {
         _sum: { viewCount: true },
         _count: { id: true },
       }),
-      prisma.highlight.findMany({
+      (
+        await getPrisma()
+      ).highlight.findMany({
         where: { createdAt: { gte: startDate } },
         orderBy: { viewCount: "desc" },
         take: 10,

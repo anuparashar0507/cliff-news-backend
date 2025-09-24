@@ -1,5 +1,5 @@
 // src/controllers/articles.js
-const { PrismaClient } = require("@prisma/client");
+const getPrismaClient = require("../lib/prisma");
 const {
   generateQuickRead,
   generateSEOMetadata,
@@ -9,6 +9,11 @@ const {
   regenerateWithFeedback,
   translateContent,
 } = require("../services/geminiService");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 const {
   generateUniqueSlug,
   calculateReadingTime,
@@ -17,8 +22,6 @@ const {
   validateExcerpt,
   truncateExcerpt,
 } = require("../utils/slugify");
-
-const prisma = new PrismaClient();
 
 // Create new article
 exports.createArticle = async (req, res) => {
@@ -46,7 +49,10 @@ exports.createArticle = async (req, res) => {
     }
 
     // Verify category exists
-    const category = await prisma.category.findUnique({
+    const prisma = await getPrisma();
+    const category = await (
+      await getPrisma()
+    ).category.findUnique({
       where: { id: categoryId },
     });
 
@@ -82,7 +88,9 @@ exports.createArticle = async (req, res) => {
     }
 
     // Create article
-    const article = await prisma.article.create({
+    const article = await (
+      await getPrisma()
+    ).article.create({
       data: {
         title: title.trim(),
         slug,
@@ -112,7 +120,9 @@ exports.createArticle = async (req, res) => {
     // QuickRead is now handled as a direct field in the article creation
 
     // Fetch the complete article with relations
-    const completeArticle = await prisma.article.findUnique({
+    const completeArticle = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id: article.id },
       include: {
         author: { select: { name: true, email: true } },
@@ -175,7 +185,9 @@ exports.getArticles = async (req, res) => {
     orderBy[sortBy] = sortOrder;
 
     const [articles, total] = await Promise.all([
-      prisma.article.findMany({
+      (
+        await getPrisma()
+      ).article.findMany({
         where,
         include: {
           author: { select: { name: true } },
@@ -185,7 +197,7 @@ exports.getArticles = async (req, res) => {
         skip: offset,
         take: parseInt(limit),
       }),
-      prisma.article.count({ where }),
+      (await getPrisma()).article.count({ where }),
     ]);
 
     res.json({
@@ -209,7 +221,9 @@ exports.getArticle = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const article = await prisma.article.findUnique({
+    const article = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id },
       include: {
         author: { select: { name: true, email: true } },
@@ -241,7 +255,9 @@ exports.getArticleBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const article = await prisma.article.findUnique({
+    const article = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { slug },
       include: {
         author: { select: { name: true } },
@@ -259,7 +275,9 @@ exports.getArticleBySlug = async (req, res) => {
     }
 
     // Increment view count
-    await prisma.article.update({
+    await (
+      await getPrisma()
+    ).article.update({
       where: { id: article.id },
       data: { viewCount: { increment: 1 } },
     });
@@ -294,7 +312,9 @@ exports.updateArticle = async (req, res) => {
     } = req.body;
 
     // Check if article exists
-    const existingArticle = await prisma.article.findUnique({
+    const existingArticle = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id },
     });
 
@@ -352,7 +372,9 @@ exports.updateArticle = async (req, res) => {
     }
 
     // Update article
-    const article = await prisma.article.update({
+    const article = await (
+      await getPrisma()
+    ).article.update({
       where: { id },
       data: updateData,
       include: {
@@ -380,7 +402,9 @@ exports.deleteArticle = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const article = await prisma.article.findUnique({
+    const article = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id },
     });
 
@@ -394,20 +418,28 @@ exports.deleteArticle = async (req, res) => {
     }
 
     // Delete all related records first to avoid foreign key constraint violations
-    await prisma.inshort.deleteMany({
+    await (
+      await getPrisma()
+    ).inshort.deleteMany({
       where: { sourceArticleId: id },
     });
 
-    await prisma.quickRead.deleteMany({
+    await (
+      await getPrisma()
+    ).quickRead.deleteMany({
       where: { articleId: id },
     });
 
-    await prisma.articleTag.deleteMany({
+    await (
+      await getPrisma()
+    ).articleTag.deleteMany({
       where: { articleId: id },
     });
 
     // Now delete the article
-    await prisma.article.delete({
+    await (
+      await getPrisma()
+    ).article.delete({
       where: { id },
     });
 
@@ -437,7 +469,9 @@ exports.getQuickReads = async (req, res) => {
       where.article.categoryId = category;
     }
 
-    const quickReads = await prisma.quickRead.findMany({
+    const quickReads = await (
+      await getPrisma()
+    ).quickRead.findMany({
       where,
       include: {
         article: {
@@ -479,7 +513,9 @@ exports.getBreakingNews = async (req, res) => {
   try {
     const { limit = 5 } = req.query;
 
-    const breakingNews = await prisma.article.findMany({
+    const breakingNews = await (
+      await getPrisma()
+    ).article.findMany({
       where: {
         status: "PUBLISHED",
         isBreaking: true,
@@ -511,7 +547,9 @@ exports.getTopStories = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-    const topStories = await prisma.article.findMany({
+    const topStories = await (
+      await getPrisma()
+    ).article.findMany({
       where: {
         status: "PUBLISHED",
         isTopStory: true,
@@ -657,12 +695,14 @@ exports.translateAndCreateArticle = async (req, res) => {
     }
 
     // Get the original article
-    const originalArticle = await prisma.article.findUnique({
+    const originalArticle = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id: articleId },
       include: {
         category: true,
         author: true,
-      }
+      },
     });
 
     if (!originalArticle) {
@@ -691,7 +731,9 @@ exports.translateAndCreateArticle = async (req, res) => {
     const readTime = calculateReadingTime(translatedContent.content);
 
     // Create new article with translated content
-    const newArticle = await prisma.article.create({
+    const newArticle = await (
+      await getPrisma()
+    ).article.create({
       data: {
         title: translatedContent.title,
         slug: translatedSlug,
@@ -699,7 +741,8 @@ exports.translateAndCreateArticle = async (req, res) => {
         excerpt: truncateExcerpt(translatedContent.excerpt),
         featuredImage: originalArticle.featuredImage,
         metaTitle: translatedContent.metaTitle || translatedContent.title,
-        metaDescription: translatedContent.metaDescription || translatedContent.excerpt,
+        metaDescription:
+          translatedContent.metaDescription || translatedContent.excerpt,
         ogImage: originalArticle.ogImage,
         isBreaking: originalArticle.isBreaking,
         isTopStory: originalArticle.isTopStory,
@@ -717,7 +760,9 @@ exports.translateAndCreateArticle = async (req, res) => {
 
     // Update original article to draft if it was published
     if (originalArticle.status === "PUBLISHED") {
-      await prisma.article.update({
+      await (
+        await getPrisma()
+      ).article.update({
         where: { id: articleId },
         data: { status: "DRAFT" },
       });
