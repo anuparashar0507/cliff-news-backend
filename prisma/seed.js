@@ -48,8 +48,6 @@ async function main() {
   console.log("API: http://localhost:3000/api");
   console.log("CMS: http://localhost:3000/cms");
 
-  return; // Exit early to avoid other data creation
-
   // Create categories
   const categories = [
     {
@@ -259,10 +257,8 @@ async function main() {
 
   const createdHighlights = [];
   for (const highlight of highlights) {
-    const created = await prisma.highlight.upsert({
-      where: { title: highlight.title },
-      update: {},
-      create: highlight,
+    const created = await prisma.highlight.create({
+      data: highlight,
     });
     createdHighlights.push(created);
   }
@@ -287,10 +283,8 @@ async function main() {
 
   const createdNIT = [];
   for (const nit of nitItems) {
-    const created = await prisma.nIT.upsert({
-      where: { title: nit.title },
-      update: {},
-      create: nit,
+    const created = await prisma.nIT.create({
+      data: nit,
     });
     createdNIT.push(created);
   }

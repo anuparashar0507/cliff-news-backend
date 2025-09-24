@@ -52,7 +52,9 @@ exports.createNotification = async (req, res) => {
     }
 
     // Create notification in database
-    const notification = await prisma.notification.create({
+    const notification = await (
+      await getPrisma()
+    ).notification.create({
       data: {
         title,
         message,
@@ -88,7 +90,9 @@ exports.getNotifications = async (req, res) => {
       where.type = type;
     }
 
-    const notifications = await prisma.notification.findMany({
+    const notifications = await (
+      await getPrisma()
+    ).notification.findMany({
       where,
       include: {
         creator: {
@@ -104,7 +108,7 @@ exports.getNotifications = async (req, res) => {
       skip: parseInt(offset),
     });
 
-    const total = await prisma.notification.count({ where });
+    const total = await (await getPrisma()).notification.count({ where });
 
     res.json({
       success: true,
@@ -127,7 +131,9 @@ exports.getNotification = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const notification = await prisma.notification.findUnique({
+    const notification = await (
+      await getPrisma()
+    ).notification.findUnique({
       where: { id },
       include: {
         creator: {
@@ -161,7 +167,9 @@ exports.updateNotification = async (req, res) => {
     const { title, message, type, targetAudience, scheduledAt, status } =
       req.body;
 
-    const notification = await prisma.notification.update({
+    const notification = await (
+      await getPrisma()
+    ).notification.update({
       where: { id },
       data: {
         title,
@@ -189,7 +197,9 @@ exports.deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await prisma.notification.delete({
+    await (
+      await getPrisma()
+    ).notification.delete({
       where: { id },
     });
 
@@ -208,7 +218,9 @@ exports.sendNotification = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const notification = await prisma.notification.findUnique({
+    const notification = await (
+      await getPrisma()
+    ).notification.findUnique({
       where: { id },
     });
 
@@ -249,7 +261,9 @@ exports.sendNotification = async (req, res) => {
     }
 
     // Update notification in database
-    const updatedNotification = await prisma.notification.update({
+    const updatedNotification = await (
+      await getPrisma()
+    ).notification.update({
       where: { id },
       data: {
         status: "SENT",
@@ -267,7 +281,9 @@ exports.sendNotification = async (req, res) => {
     console.error("Send notification error:", error);
 
     // Update status to failed
-    await prisma.notification.update({
+    await (
+      await getPrisma()
+    ).notification.update({
       where: { id: req.params.id },
       data: { status: "FAILED" },
     });
@@ -279,21 +295,27 @@ exports.sendNotification = async (req, res) => {
 // Get notification statistics
 exports.getNotificationStats = async (req, res) => {
   try {
-    const stats = await prisma.notification.groupBy({
+    const stats = await (
+      await getPrisma()
+    ).notification.groupBy({
       by: ["status"],
       _count: {
         status: true,
       },
     });
 
-    const totalDelivered = await prisma.notification.aggregate({
+    const totalDelivered = await (
+      await getPrisma()
+    ).notification.aggregate({
       where: { status: "SENT" },
       _sum: {
         deliveredCount: true,
       },
     });
 
-    const totalClicks = await prisma.notification.aggregate({
+    const totalClicks = await (
+      await getPrisma()
+    ).notification.aggregate({
       where: { status: "SENT" },
       _sum: {
         clickedCount: true,
@@ -324,13 +346,17 @@ exports.subscribeUser = async (req, res) => {
     }
 
     // Check if user is already subscribed
-    const existingSubscription = await prisma.userSubscription.findUnique({
+    const existingSubscription = await (
+      await getPrisma()
+    ).userSubscription.findUnique({
       where: { onesignalPlayerId },
     });
 
     if (existingSubscription) {
       // Update existing subscription
-      const subscription = await prisma.userSubscription.update({
+      const subscription = await (
+        await getPrisma()
+      ).userSubscription.update({
         where: { onesignalPlayerId },
         data: {
           isActive: true,
@@ -345,7 +371,9 @@ exports.subscribeUser = async (req, res) => {
     }
 
     // Create new subscription
-    const subscription = await prisma.userSubscription.create({
+    const subscription = await (
+      await getPrisma()
+    ).userSubscription.create({
       data: {
         onesignalPlayerId,
         platform,
@@ -372,7 +400,9 @@ exports.unsubscribeUser = async (req, res) => {
       return res.status(400).json({ error: "OneSignal player ID is required" });
     }
 
-    await prisma.userSubscription.update({
+    await (
+      await getPrisma()
+    ).userSubscription.update({
       where: { onesignalPlayerId },
       data: { isActive: false },
     });
@@ -397,7 +427,9 @@ exports.sendBreakingNews = async (req, res) => {
     }
 
     // Get article details
-    const article = await prisma.article.findUnique({
+    const article = await (
+      await getPrisma()
+    ).article.findUnique({
       where: { id: articleId },
       include: {
         author: true,
@@ -410,7 +442,9 @@ exports.sendBreakingNews = async (req, res) => {
     }
 
     // Create breaking news notification
-    const notification = await prisma.notification.create({
+    const notification = await (
+      await getPrisma()
+    ).notification.create({
       data: {
         title: `🚨 BREAKING: ${article.title}`,
         message: article.excerpt || article.title,
@@ -449,7 +483,9 @@ exports.sendBreakingNews = async (req, res) => {
     }
 
     // Update notification
-    const updatedNotification = await prisma.notification.update({
+    const updatedNotification = await (
+      await getPrisma()
+    ).notification.update({
       where: { id: notification.id },
       data: {
         status: "SENT",

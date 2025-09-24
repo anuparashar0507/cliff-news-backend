@@ -17,7 +17,7 @@ exports.generateUniqueSlug = async (
   field = "slug",
   excludeId = null
 ) => {
-  const prisma = require("../lib/prisma");
+  const getPrismaClient = require("../lib/prisma");
 
   let baseSlug = this.createSlug(text);
   let slug = baseSlug;
@@ -29,6 +29,7 @@ exports.generateUniqueSlug = async (
       where.id = { not: excludeId };
     }
 
+    const prisma = await getPrismaClient();
     const existing = await prisma[model].findFirst({ where });
 
     if (!existing) {

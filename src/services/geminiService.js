@@ -77,7 +77,7 @@ exports.generateSEOMetadata = async (title, content, language = "ENGLISH") => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Clean content for processing
-    const cleanContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
+    const processedContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
 
     const languageName = language === "HINDI" ? "Hindi" : "English";
 
@@ -85,7 +85,7 @@ exports.generateSEOMetadata = async (title, content, language = "ENGLISH") => {
     Generate SEO metadata for this news article in ${languageName}:
     
     Title: ${title}
-    Content: ${cleanContent}
+    Content: ${processedContent}
     
     Please provide a JSON response with:
     1. Meta title (maximum 60 characters)
@@ -154,7 +154,7 @@ exports.generateQuickRead = async (title, content, language = "ENGLISH") => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Clean content for processing
-    const cleanContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
+    const processedContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
 
     const languageName = language === "HINDI" ? "Hindi" : "English";
 
@@ -162,7 +162,7 @@ exports.generateQuickRead = async (title, content, language = "ENGLISH") => {
     Create a quick read summary for this news article in ${languageName}:
     
     Title: ${title}
-    Content: ${cleanContent}
+    Content: ${processedContent}
     
     Please provide a JSON response with:
     1. A catchy, short title (maximum 60 characters)
@@ -224,7 +224,7 @@ exports.generateTags = async (title, content, language = "ENGLISH") => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Clean content for processing
-    const cleanContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
+    const processedContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
 
     const languageName = language === "HINDI" ? "Hindi" : "English";
 
@@ -232,7 +232,7 @@ exports.generateTags = async (title, content, language = "ENGLISH") => {
     Generate relevant tags for this news article in ${languageName}:
     
     Title: ${title}
-    Content: ${cleanContent}
+    Content: ${processedContent}
     
     Please provide a JSON response with:
     1. An array of 5-10 relevant tags
@@ -291,7 +291,7 @@ exports.generateInshortContent = async (
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Clean content for processing
-    const cleanContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
+    const processedContent = content.replace(/<[^>]*>/g, "").substring(0, 3000);
 
     const languageName = language === "HINDI" ? "Hindi" : "English";
 
@@ -299,7 +299,7 @@ exports.generateInshortContent = async (
     Convert this news article into a short, engaging Inshort-style news story in ${languageName}:
     
     Original Title: ${title}
-    Original Content: ${cleanContent}
+    Original Content: ${processedContent}
     
     Create a concise news story that:
     1. Captures the key points in 2-3 sentences

@@ -1,6 +1,11 @@
 // src/middleware/auth.js
 const jwt = require("jsonwebtoken");
-const prisma = require("../lib/prisma");
+const getPrismaClient = require("../lib/prisma");
+
+// Helper function to get Prisma client
+async function getPrisma() {
+  return await getPrismaClient();
+}
 
 // Verify JWT token and attach user to request
 exports.authenticateToken = async (req, res, next) => {
@@ -14,6 +19,7 @@ exports.authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    const prisma = await getPrisma();
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
@@ -66,6 +72,7 @@ exports.optionalAuth = async (req, res, next) => {
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const prisma = await getPrisma();
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
         select: {
