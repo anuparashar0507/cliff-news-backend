@@ -28,6 +28,7 @@ exports.createNIT = async (req, res) => {
       data: {
         title: title.trim(),
         imageUrl:
+          req.cloudinaryResult?.url ||
           file.optimizedUrl ||
           file.originalUrl ||
           `/uploads/images/${file.filename}`,
@@ -130,6 +131,7 @@ exports.updateNIT = async (req, res) => {
 
     if (file) {
       updateData.imageUrl =
+        req.cloudinaryResult?.url ||
         file.optimizedUrl ||
         file.originalUrl ||
         `/uploads/images/${file.filename}`;

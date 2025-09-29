@@ -9,6 +9,7 @@ const {
   uploadSingleImage,
   processImage,
   handleUploadError,
+  uploadToCloudinary,
 } = require("../middleware/upload");
 const {
   createNIT,
@@ -29,7 +30,7 @@ router.post(
   requireEditor,
   uploadSingleImage,
   handleUploadError,
-  processImage,
+  uploadToCloudinary,
   createNIT
 );
 router.put(
@@ -38,7 +39,7 @@ router.put(
   requireEditor,
   uploadSingleImage,
   handleUploadError,
-  processImage,
+  uploadToCloudinary,
   updateNIT
 );
 router.delete("/:id", authenticateToken, requireEditor, deleteNIT);

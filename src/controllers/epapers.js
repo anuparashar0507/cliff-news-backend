@@ -60,32 +60,42 @@ exports.uploadEPaper = async (req, res) => {
       },
     });
 
-    // Create organized file path
-    const dateObj = new Date(date);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(dateObj.getDate()).padStart(2, "0");
-    const languageLower = language.toLowerCase();
+    // Use Cloudinary URL if available, otherwise fall back to local storage
+    let pdfUrl;
+    let fileSize = file.size;
 
-    // Create directory structure: /uploads/pdfs/language/year/month/
-    const uploadDir = path.join(
-      __dirname,
-      "../../public/uploads/pdfs",
-      languageLower,
-      year.toString(),
-      month
-    );
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (req.cloudinaryResult?.url) {
+      // Using Cloudinary
+      pdfUrl = req.cloudinaryResult.url;
+    } else {
+      // Fall back to local storage
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      const languageLower = language.toLowerCase();
+
+      // Create directory structure: /uploads/pdfs/language/year/month/
+      const uploadDir = path.join(
+        __dirname,
+        "../../public/uploads/pdfs",
+        languageLower,
+        year.toString(),
+        month
+      );
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Generate filename: YYYY-MM-DD-language.pdf
+      const filename = `${year}-${month}-${day}-${languageLower}.pdf`;
+      const filePath = path.join(uploadDir, filename);
+      const relativePath = `/uploads/pdfs/${languageLower}/${year}/${month}/${filename}`;
+
+      // Move uploaded file to organized location
+      fs.renameSync(file.path, filePath);
+      pdfUrl = relativePath;
     }
-
-    // Generate filename: YYYY-MM-DD-language.pdf
-    const filename = `${year}-${month}-${day}-${languageLower}.pdf`;
-    const filePath = path.join(uploadDir, filename);
-    const relativePath = `/uploads/pdfs/${languageLower}/${year}/${month}/${filename}`;
-
-    // Move uploaded file to organized location
-    fs.renameSync(file.path, filePath);
 
     // Create e-paper record
     const epaper = await (
@@ -95,8 +105,8 @@ exports.uploadEPaper = async (req, res) => {
         title: title.trim(),
         date: new Date(date),
         language: language.toUpperCase(),
-        pdfUrl: relativePath,
-        fileSize: file.size,
+        pdfUrl: pdfUrl,
+        fileSize: fileSize,
         pageCount: 1, // You can extract this from PDF metadata later
         status: "ACTIVE",
         description: description?.trim(),
@@ -232,6 +242,18 @@ exports.getTodayEPaper = async (req, res) => {
       });
     }
 
+    // If still no ACTIVE paper, get the latest paper (including ARCHIVED)
+    if (!epaper) {
+      epaper = await (
+        await getPrisma()
+      ).ePaper.findFirst({
+        where: {
+          language: language.toUpperCase(),
+        },
+        orderBy: { date: "desc" },
+      });
+    }
+
     if (!epaper) {
       return res.status(404).json({
         error: `No active e-paper found for ${language} language`,
@@ -248,7 +270,7 @@ exports.getTodayEPaper = async (req, res) => {
 
     res.json({
       success: true,
-      epaper,
+      data: epaper,
       isToday: epaper.date >= today && epaper.date < tomorrow,
     });
   } catch (error) {

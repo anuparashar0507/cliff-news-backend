@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
+const { uploadImage: uploadImageToCloudinary, uploadPDF: uploadPDFToCloudinary, uploadHighlight: uploadHighlightToCloudinary, isConfigured } = require("../services/cloudinary");
 
 // Ensure upload directories exist
 const ensureDirectoryExists = (dir) => {
@@ -143,6 +144,52 @@ exports.processPDF = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("PDF processing error:", error);
+    next(error);
+  }
+};
+
+// Cloudinary upload middleware
+exports.uploadToCloudinary = async (req, res, next) => {
+  if (!req.file) return next();
+
+  try {
+    const fileType = req.file.mimetype.startsWith('image/') ? 'image' :
+                    req.file.mimetype === 'application/pdf' ? 'pdf' : 'unknown';
+
+    let uploadResult;
+
+    if (fileType === 'image') {
+      // Check if this is for highlights (based on route or body parameter)
+      const isHighlight = req.route.path.includes('/highlights') || req.body.type === 'highlight';
+
+      if (isHighlight) {
+        uploadResult = await uploadHighlightToCloudinary(req.file.path);
+      } else {
+        uploadResult = await uploadImageToCloudinary(req.file.path);
+      }
+    } else if (fileType === 'pdf') {
+      uploadResult = await uploadPDFToCloudinary(req.file.path);
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type' });
+    }
+
+    if (!uploadResult.success) {
+      return res.status(500).json({ error: uploadResult.error });
+    }
+
+    // Clean up temporary file
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
+
+    // Add Cloudinary result to request
+    req.cloudinaryResult = uploadResult;
+
+    next();
+  } catch (error) {
+    console.error('Cloudinary upload middleware error:', error);
     next(error);
   }
 };

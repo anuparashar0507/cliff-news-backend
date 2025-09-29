@@ -8,7 +8,7 @@ async function getPrisma() {
 const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
-const { v4: uuidv4 } = require("uuid");
+const { uploadHighlight, deleteFile, isConfigured } = require("../services/cloudinary");
 
 // Utility function to get client IP
 const getClientIP = (req) => {
@@ -78,17 +78,51 @@ exports.createHighlight = async (req, res) => {
     const finalTitle =
       title?.trim() || `Highlight - ${new Date().toLocaleDateString()}`;
 
-    // Get image metadata
-    const imageMetadata = await getImageMetadata(file.path);
+    let imageUrl, thumbnailUrl, imageMetadata;
 
-    // Generate thumbnail
-    const thumbnailFilename = `thumb_${file.filename}`;
-    const thumbnailPath = path.join(path.dirname(file.path), thumbnailFilename);
+    // Try Cloudinary upload first, fallback to local
+    if (isConfigured()) {
+      try {
+        const cloudinaryResult = await uploadHighlight(file.path);
+        if (cloudinaryResult.success) {
+          imageUrl = cloudinaryResult.url;
+          thumbnailUrl = cloudinaryResult.thumbnailUrl;
+          imageMetadata = {
+            width: cloudinaryResult.width,
+            height: cloudinaryResult.height,
+            format: cloudinaryResult.format,
+            size: cloudinaryResult.bytes,
+            aspectRatio: cloudinaryResult.aspectRatio,
+          };
 
-    await sharp(file.path)
-      .resize(400, 400, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toFile(thumbnailPath);
+          // Clean up temporary file
+          try {
+            fs.unlinkSync(file.path);
+          } catch (cleanupError) {
+            console.error('Cleanup error:', cleanupError);
+          }
+        }
+      } catch (cloudinaryError) {
+        console.error('Cloudinary upload failed, falling back to local:', cloudinaryError);
+      }
+    }
+
+    // Fallback to local storage if Cloudinary fails or not configured
+    if (!imageUrl) {
+      imageMetadata = await getImageMetadata(file.path);
+
+      // Generate thumbnail
+      const thumbnailFilename = `thumb_${file.filename}`;
+      const thumbnailPath = path.join(path.dirname(file.path), thumbnailFilename);
+
+      await sharp(file.path)
+        .resize(400, 400, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toFile(thumbnailPath);
+
+      imageUrl = file.optimizedUrl || file.originalUrl || `/uploads/images/${file.filename}`;
+      thumbnailUrl = `/uploads/images/${thumbnailFilename}`;
+    }
 
     const highlight = await (
       await getPrisma()
@@ -96,11 +130,8 @@ exports.createHighlight = async (req, res) => {
       data: {
         title: finalTitle,
         caption: caption?.trim() || null,
-        imageUrl:
-          file.optimizedUrl ||
-          file.originalUrl ||
-          `/uploads/images/${file.filename}`,
-        thumbnailUrl: `/uploads/images/${thumbnailFilename}`,
+        imageUrl,
+        thumbnailUrl,
         category: category?.trim() || null,
         priority: priority.toUpperCase(),
         tags: tags?.trim() || null,

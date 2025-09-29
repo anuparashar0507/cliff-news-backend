@@ -575,7 +575,8 @@ if (typeof articlesModule === "undefined") {
         const formData = new FormData();
         formData.append("image", file);
 
-        const response = await fetch("/api/upload/image", {
+        // Use Cloudinary upload endpoint for better CDN performance
+        const response = await fetch("/api/upload/cloudinary/image", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -586,6 +587,7 @@ if (typeof articlesModule === "undefined") {
         const data = await response.json();
 
         if (data.success && data.file && data.file.url) {
+          console.log("✅ Image uploaded to Cloudinary:", data.file.url);
           resolve(data.file.url);
         } else {
           reject(data.error || "Upload failed");
@@ -758,7 +760,7 @@ if (typeof articlesModule === "undefined") {
         const formData = new FormData();
         formData.append("image", file);
 
-        const response = await fetch("/api/upload/image", {
+        const response = await fetch("/api/upload/cloudinary/image", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${localStorage.getItem("authToken")}`,

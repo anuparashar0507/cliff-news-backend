@@ -9,6 +9,7 @@ const {
   uploadSinglePDF,
   processPDF,
   handleUploadError,
+  uploadToCloudinary,
 } = require("../middleware/upload");
 const {
   uploadEPaper,
@@ -38,7 +39,7 @@ router.post(
   requireEditor,
   uploadSinglePDF,
   handleUploadError,
-  processPDF,
+  uploadToCloudinary,
   uploadEPaper
 );
 router.get("/:id", authenticateToken, getEPaper);

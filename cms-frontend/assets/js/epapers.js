@@ -308,37 +308,6 @@ if (typeof epapersModule === "undefined") {
       }
     },
 
-    // Handle file selection
-    handleFileSelect: function (file) {
-      // Validate file type
-      if (file.type !== "application/pdf") {
-        showNotification("Please select a PDF file", "error");
-        return;
-      }
-
-      // Validate file size (50MB limit)
-      if (file.size > 50 * 1024 * 1024) {
-        showNotification("File size must be less than 50MB", "error");
-        return;
-      }
-
-      // Update file input
-      const fileInput = document.getElementById("epaper-file");
-      if (fileInput) {
-        fileInput.files = [file];
-      }
-
-      // Show file info
-      const fileInfo = document.getElementById("file-info");
-      if (fileInfo) {
-        fileInfo.innerHTML = `
-        <div class="flex items-center gap-2 text-sm text-gray-600">
-          <span>📄 ${file.name}</span>
-          <span>(${formatFileSize(file.size)})</span>
-        </div>
-      `;
-      }
-    },
 
     // Handle upload e-paper
     handleUploadEPaper: async function () {

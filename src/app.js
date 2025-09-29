@@ -95,9 +95,90 @@ app.use("/api/youtube", youtubeRoutes);
 const {
   uploadSingleImage,
   uploadSinglePDF,
+  uploadToCloudinary,
   handleUploadError,
 } = require("./middleware/upload");
 const { authenticateToken } = require("./middleware/auth");
+const { isConfigured } = require("./services/cloudinary");
+
+// Cloudinary upload routes (preferred)
+app.post(
+  "/api/upload/cloudinary/image",
+  authenticateToken,
+  uploadSingleImage,
+  uploadToCloudinary,
+  handleUploadError,
+  (req, res) => {
+    if (!req.cloudinaryResult) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+    res.json({
+      success: true,
+      file: {
+        url: req.cloudinaryResult.url,
+        publicId: req.cloudinaryResult.publicId,
+        thumbnailUrl: req.cloudinaryResult.thumbnailUrl,
+        width: req.cloudinaryResult.width,
+        height: req.cloudinaryResult.height,
+        format: req.cloudinaryResult.format,
+        bytes: req.cloudinaryResult.bytes,
+        aspectRatio: req.cloudinaryResult.aspectRatio,
+      },
+    });
+  }
+);
+
+app.post(
+  "/api/upload/cloudinary/pdf",
+  authenticateToken,
+  uploadSinglePDF,
+  uploadToCloudinary,
+  handleUploadError,
+  (req, res) => {
+    if (!req.cloudinaryResult) {
+      return res.status(400).json({ error: "No PDF file provided" });
+    }
+    res.json({
+      success: true,
+      file: {
+        url: req.cloudinaryResult.url,
+        publicId: req.cloudinaryResult.publicId,
+        thumbnailUrl: req.cloudinaryResult.thumbnailUrl,
+        format: req.cloudinaryResult.format,
+        bytes: req.cloudinaryResult.bytes,
+      },
+    });
+  }
+);
+
+app.post(
+  "/api/upload/cloudinary/highlight",
+  authenticateToken,
+  uploadSingleImage,
+  uploadToCloudinary,
+  handleUploadError,
+  (req, res) => {
+    if (!req.cloudinaryResult) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
+    res.json({
+      success: true,
+      file: {
+        url: req.cloudinaryResult.url,
+        publicId: req.cloudinaryResult.publicId,
+        thumbnailUrl: req.cloudinaryResult.thumbnailUrl,
+        width: req.cloudinaryResult.width,
+        height: req.cloudinaryResult.height,
+        format: req.cloudinaryResult.format,
+        bytes: req.cloudinaryResult.bytes,
+        aspectRatio: req.cloudinaryResult.aspectRatio,
+        sizes: req.cloudinaryResult.sizes,
+      },
+    });
+  }
+);
+
+// Legacy local upload routes (fallback)
 app.post(
   "/api/upload/image",
   authenticateToken,
