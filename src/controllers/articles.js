@@ -783,3 +783,60 @@ exports.translateAndCreateArticle = async (req, res) => {
     res.status(500).json({ error: "Failed to translate and create article" });
   }
 };
+
+// Get articles by category slug
+exports.getArticlesByCategory = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { page = 1, limit = 12, language } = req.query;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // First, get the category by slug
+    const category = await (await getPrisma()).category.findUnique({
+      where: { slug },
+    });
+
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    // Build where clause
+    const where = {
+      status: "PUBLISHED",
+      categoryId: category.id,
+    };
+
+    if (language) {
+      where.language = language;
+    }
+
+    // Get articles with pagination
+    const [articles, totalCount] = await Promise.all([
+      (await getPrisma()).article.findMany({
+        where,
+        include: {
+          category: { select: { name: true, slug: true, color: true } },
+        },
+        orderBy: { publishedAt: "desc" },
+        skip: offset,
+        take: parseInt(limit),
+      }),
+      (await getPrisma()).article.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+    res.json({
+      success: true,
+      articles,
+      totalPages,
+      currentPage: parseInt(page),
+      totalCount,
+      category,
+    });
+  } catch (error) {
+    console.error("Get articles by category error:", error);
+    res.status(500).json({ error: "Failed to fetch articles by category" });
+  }
+};

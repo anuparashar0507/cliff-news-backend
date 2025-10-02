@@ -15,6 +15,7 @@ const {
   getQuickReads,
   getBreakingNews,
   getTopStories,
+  getArticlesByCategory,
   generateNewsFromContent,
   generateSEOOnly,
   regenerateWithFeedback,
@@ -30,6 +31,7 @@ router.get("/slug/:slug", optionalAuth, getArticleBySlug);
 router.get("/quick-reads", getQuickReads);
 router.get("/breaking", getBreakingNews);
 router.get("/top-stories", getTopStories);
+router.get("/category/:slug", optionalAuth, getArticlesByCategory);
 
 // Individual article - Public route for frontend display
 router.get("/:id", optionalAuth, getArticle);
